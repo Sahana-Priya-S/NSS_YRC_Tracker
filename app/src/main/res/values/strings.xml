@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">NSS_YRCTracker</string>
+    <string-array name="roles">
+        <item>Student</item>
+        <item>Admin</item>
+    </string-array>
+</resources>

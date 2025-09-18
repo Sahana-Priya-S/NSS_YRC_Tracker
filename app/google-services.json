@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "54129408268",
+    "project_id": "nss-yrc-tracker",
+    "storage_bucket": "nss-yrc-tracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:54129408268:android:038970220921e42bff3129",
+        "android_client_info": {
+          "package_name": "com.example.nss_yrctracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMXjC8-gxjhx95C-5xzBJTUdkTeLcWzE0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
