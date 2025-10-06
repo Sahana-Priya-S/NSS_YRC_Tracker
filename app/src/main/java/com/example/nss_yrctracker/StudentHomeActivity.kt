@@ -16,28 +16,14 @@ class StudentHomeActivity : AppCompatActivity() {
     private lateinit var eventAdapter: EventAdapter
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val registeredEvents = mutableSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_student_home)
 
-        // Setup RecyclerView
-        val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        setupRecyclerView()
 
-        val eventList = mutableListOf<Event>()
-
-        eventAdapter = EventAdapter(
-            eventList,
-            registeredTitles = mutableSetOf()
-        ) { event ->
-            Toast.makeText(this, "Registered for ${event.title}", Toast.LENGTH_SHORT).show()
-        }
-
-        recyclerView.adapter = eventAdapter
-
-
-        // Logout button
         val logoutButton = findViewById<Button>(R.id.logoutButton)
         logoutButton.setOnClickListener {
             auth.signOut()
@@ -45,8 +31,31 @@ class StudentHomeActivity : AppCompatActivity() {
             finish()
         }
 
-        loadEvents()
+        loadRegisteredEventsAndThenAllEvents()
     }
+
+    private fun setupRecyclerView() {
+        recyclerView = findViewById(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        eventAdapter = EventAdapter(emptyList(), registeredEvents) { event ->
+            registerForEvent(event)
+        }
+        recyclerView.adapter = eventAdapter
+    }
+
+    private fun loadRegisteredEventsAndThenAllEvents() {
+        val userId = auth.currentUser?.uid ?: return
+        firestore.collection("registrations").whereEqualTo("userId", userId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                snapshot.documents.forEach { doc ->
+                    doc.getString("eventTitle")?.let { registeredEvents.add(it) }
+                }
+                loadEvents() // Now load all events
+            }
+    }
+
 
     private fun loadEvents() {
         firestore.collection("events")
@@ -57,31 +66,25 @@ class StudentHomeActivity : AppCompatActivity() {
                 }
 
                 val events = snapshot?.documents?.mapNotNull { it.toObject(Event::class.java) } ?: emptyList()
-                eventAdapter.updateEvents(events)
+                eventAdapter.updateEvents(events, registeredEvents)
             }
     }
 
     private fun registerForEvent(event: Event) {
         val userId = auth.currentUser?.uid ?: return
+        val registrationDoc = mapOf("userId" to userId, "eventTitle" to event.title)
+
         firestore.collection("registrations")
             .document("$userId-${event.title}")
-            .set(mapOf("userId" to userId, "eventTitle" to event.title))
+            .set(registrationDoc)
             .addOnSuccessListener {
                 Toast.makeText(this, "Registered for ${event.title}", Toast.LENGTH_SHORT).show()
+                // Add to our local list and update the adapter
+                registeredEvents.add(event.title)
+                eventAdapter.notifyDataSetChanged()
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Failed to register", Toast.LENGTH_SHORT).show()
             }
     }
-
-    private fun updateEvents(events: List<Event>) {
-        eventAdapter = EventAdapter(
-            events,
-            registeredTitles
-        ) { event ->
-            Toast.makeText(this, "Registered for ${event.title}", Toast.LENGTH_SHORT).show()
-        }
-        recyclerView.adapter = eventAdapter
-    }
-
 }

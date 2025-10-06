@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
         val signupButton = findViewById<Button>(R.id.signupButton)
         val loginButton = findViewById<Button>(R.id.loginButton)
 
-        // SIGN UP (default role = "Student")
+        // SIGN UP LOGIC
         signupButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
@@ -39,16 +39,20 @@ class MainActivity : AppCompatActivity() {
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
+                        // Get the UID right after user creation
                         val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
+
+                        // **FIX IS HERE**: Create the map with the 'uid' field
                         val userMap = hashMapOf(
+                            "uid" to uid,
                             "email" to email,
                             "role" to "Student"
                         )
-                        db.collection("users").document(uid)
-                            .set(userMap)
+
+                        // Save the user data to Firestore
+                        db.collection("users").document(uid).set(userMap)
                             .addOnSuccessListener {
-                                Toast.makeText(this, "Signup successful (role = Student)", Toast.LENGTH_SHORT).show()
-                                // Redirect by role
+                                Toast.makeText(this, "Signup successful!", Toast.LENGTH_SHORT).show()
                                 redirectByRole("Student")
                             }
                             .addOnFailureListener { e ->
@@ -60,7 +64,7 @@ class MainActivity : AppCompatActivity() {
                 }
         }
 
-        // LOGIN: sign in, fetch role and redirect
+        // LOGIN LOGIC
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
@@ -81,7 +85,6 @@ class MainActivity : AppCompatActivity() {
                                         val role = doc.getString("role") ?: "Student"
                                         redirectByRole(role)
                                     } else {
-                                        // fallback if doc missing
                                         redirectByRole("Student")
                                     }
                                 }

@@ -32,6 +32,11 @@
         <activity android:name=".HomeActivity" />
         <activity android:name=".AdminHomeActivity" />
         <activity android:name=".StudentHomeActivity" />
+        <activity android:name=".AddEventActivity" />
+        <activity android:name=".ManageEventsActivity" />
+        <activity android:name=".EventDetailsActivity" />
+        <activity android:name=".EditEventActivity" />
+        <activity android:name=".ViewRegistrationsActivity" />
     </application>
 
 </manifest>
