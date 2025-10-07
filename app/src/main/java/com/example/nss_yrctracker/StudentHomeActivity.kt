@@ -31,6 +31,11 @@ class StudentHomeActivity : AppCompatActivity() {
             finish()
         }
 
+        val submitProofButton = findViewById<Button>(R.id.submitProofButton)
+        submitProofButton.setOnClickListener {
+            startActivity(Intent(this, SubmitProofActivity::class.java))
+        }
+
         loadRegisteredEventsAndThenAllEvents()
     }
 

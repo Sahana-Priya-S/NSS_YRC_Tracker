@@ -1,5 +1,11 @@
 <resources>
     <string name="app_name">NSS_YRCTracker</string>
+
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="view_registrations">View Registrations</string>
+    <string name="event_title">Event Title</string>
+
     <string-array name="roles">
         <item>Student</item>
         <item>Admin</item>
