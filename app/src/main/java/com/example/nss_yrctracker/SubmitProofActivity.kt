@@ -30,8 +30,8 @@ class SubmitProofActivity : AppCompatActivity() {
 
     private var selectedImageUri: Uri? = null
     private var eventsList = mutableListOf<Event>()
+    private var isSubmitting = false // **FIX #1: Flag to prevent double submission**
 
-    // Activity result launcher for picking an image
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
@@ -50,50 +50,87 @@ class SubmitProofActivity : AppCompatActivity() {
         proofImageView = findViewById(R.id.proofImageView)
         submitProofButton = findViewById(R.id.submitProofButton)
 
-        selectImageButton.setOnClickListener {
-            pickImage.launch("image/*")
-        }
-
-        submitProofButton.setOnClickListener {
-            uploadProof()
-        }
+        selectImageButton.setOnClickListener { pickImage.launch("image/*") }
+        submitProofButton.setOnClickListener { checkAndUploadProof() }
 
         loadEventsIntoSpinner()
     }
 
     private fun loadEventsIntoSpinner() {
-        firestore.collection("events").get()
-            .addOnSuccessListener { snapshot ->
-                eventsList = snapshot.toObjects(Event::class.java)
-                val eventTitles = eventsList.map { it.title }
-                val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, eventTitles)
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                eventsSpinner.adapter = adapter
+        firestore.collection("events").get().addOnSuccessListener { snapshot ->
+            eventsList = snapshot.toObjects(Event::class.java)
+            val eventTitles = eventsList.map { it.title }
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, eventTitles)
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            eventsSpinner.adapter = adapter
+        }
+    }
+
+    private fun checkAndUploadProof() {
+        // **FIX #2: Prevent submission if one is already in progress**
+        if (isSubmitting) {
+            Toast.makeText(this, "Submission in progress...", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (eventsList.isEmpty() || eventsSpinner.selectedItemPosition < 0) {
+            Toast.makeText(this, "Please select an event.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val selectedEvent = eventsList[eventsSpinner.selectedItemPosition]
+        val userId = auth.currentUser?.uid
+
+        if (selectedEvent.id.isEmpty()) {
+            Toast.makeText(this, "This event cannot be submitted for (missing ID).", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        if (userId == null) {
+            Toast.makeText(this, "You must be logged in.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        setSubmitting(true) // Disable button and set flag
+
+        firestore.collection("submissions")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("eventId", selectedEvent.id)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    uploadProof()
+                } else {
+                    Toast.makeText(this, "You have already submitted proof for this event.", Toast.LENGTH_LONG).show()
+                    setSubmitting(false) // Re-enable button
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error checking for existing submissions.", Toast.LENGTH_SHORT).show()
+                setSubmitting(false) // Re-enable button
             }
     }
 
     private fun uploadProof() {
         val selectedEvent = eventsList[eventsSpinner.selectedItemPosition]
         val summary = summaryEditText.text.toString().trim()
-        val userId = auth.currentUser?.uid
+        val userId = auth.currentUser?.uid!!
 
-        if (summary.isEmpty() || selectedImageUri == null || userId == null) {
-            Toast.makeText(this, "Please select an event, write a summary, and choose an image.", Toast.LENGTH_LONG).show()
+        if (summary.isEmpty() || selectedImageUri == null) {
+            Toast.makeText(this, "Please write a summary and choose an image.", Toast.LENGTH_LONG).show()
+            setSubmitting(false)
             return
         }
 
-        // 1. Upload the image to Firebase Storage
         val imageRef = storage.reference.child("proofs/${UUID.randomUUID()}")
         imageRef.putFile(selectedImageUri!!)
             .addOnSuccessListener {
-                // 2. Get the download URL of the uploaded image
                 imageRef.downloadUrl.addOnSuccessListener { uri ->
-                    // 3. Save the submission details to Firestore
                     saveSubmissionToFirestore(userId, selectedEvent, summary, uri.toString())
                 }
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Image upload failed.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Image upload failed. Please try again.", Toast.LENGTH_SHORT).show()
+                setSubmitting(false)
             }
     }
 
@@ -115,7 +152,15 @@ class SubmitProofActivity : AppCompatActivity() {
                 finish()
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Failed to submit proof.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Failed to save submission.", Toast.LENGTH_SHORT).show()
+                setSubmitting(false)
             }
+    }
+
+    // **FIX #3: Helper function to manage the UI state**
+    private fun setSubmitting(submitting: Boolean) {
+        isSubmitting = submitting
+        submitProofButton.isEnabled = !submitting
+        submitProofButton.text = if (submitting) "Submitting..." else "Submit"
     }
 }

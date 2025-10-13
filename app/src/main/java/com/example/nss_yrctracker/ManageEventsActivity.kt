@@ -20,22 +20,36 @@ class ManageEventsActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.manageEventsRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        adapter = ManageEventAdapter(emptyList()) { event ->
-            deleteEvent(event)
-        }
+        // **FIX IS HERE**: Update the adapter initialization to pass both functions
+        adapter = ManageEventAdapter(
+            emptyList(),
+            onCompleteClick = { event -> markEventAsCompleted(event) },
+            onDeleteClick = { event -> deleteEvent(event) }
+        )
         recyclerView.adapter = adapter
 
-        loadEvents()
+        loadActiveEvents()
     }
 
-    private fun loadEvents() {
-        firestore.collection("events").addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                return@addSnapshotListener
+    private fun loadActiveEvents() {
+        firestore.collection("events")
+            .whereEqualTo("status", "active")
+            .addSnapshotListener { snapshot, _ ->
+                val events = snapshot?.toObjects(Event::class.java) ?: emptyList()
+                adapter.updateEvents(events)
             }
-            val events = snapshot?.toObjects(Event::class.java) ?: emptyList()
-            adapter.updateEvents(events)
+    }
+
+    private fun markEventAsCompleted(event: Event) {
+        if (event.id.isEmpty()) {
+            Toast.makeText(this, "Cannot complete event with missing ID.", Toast.LENGTH_SHORT).show()
+            return
         }
+        firestore.collection("events").document(event.id)
+            .update("status", "completed")
+            .addOnSuccessListener {
+                Toast.makeText(this, "'${event.title}' marked as completed.", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun deleteEvent(event: Event) {
@@ -43,7 +57,6 @@ class ManageEventsActivity : AppCompatActivity() {
             Toast.makeText(this, "Cannot delete event with missing ID.", Toast.LENGTH_SHORT).show()
             return
         }
-
         firestore.collection("events").document(event.id).delete()
             .addOnSuccessListener {
                 Toast.makeText(this, "'${event.title}' deleted", Toast.LENGTH_SHORT).show()

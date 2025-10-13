@@ -7,5 +7,6 @@ data class Submission(
     val eventTitle: String = "",
     val summary: String = "",
     val imageUrl: String = "",
-    var status: String = "Pending" // Can be "Pending", "Approved", or "Rejected"
+    var status: String = "Pending",
+    var comments: String = ""
 )

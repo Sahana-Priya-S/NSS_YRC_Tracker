@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ManageEventAdapter(
     private var eventList: List<Event>,
+    private val onCompleteClick: (Event) -> Unit,
     private val onDeleteClick: (Event) -> Unit
 ) : RecyclerView.Adapter<ManageEventAdapter.ViewHolder>() {
 
@@ -36,31 +37,28 @@ class ManageEventAdapter(
         private val editButton: Button = itemView.findViewById(R.id.editEventButton)
         private val viewRegButton: Button = itemView.findViewById(R.id.viewRegistrationsButton)
         private val deleteButton: Button = itemView.findViewById(R.id.deleteEventButton)
+        private val completeButton: Button = itemView.findViewById(R.id.completeEventButton)
 
         fun bind(event: Event) {
             titleTextView.text = event.title
 
-            // Set up the "Edit" button to open the EditEventActivity
             editButton.setOnClickListener {
                 val intent = Intent(itemView.context, EditEventActivity::class.java).apply {
-                    // Pass the unique event ID so the correct document can be edited
                     putExtra("EVENT_ID", event.id)
                 }
                 itemView.context.startActivity(intent)
             }
 
-            // Set up the "View Registrations" button to open the ViewRegistrationsActivity
+            // This is correct: it passes the title for querying submissions
             viewRegButton.setOnClickListener {
                 val intent = Intent(itemView.context, ViewRegistrationsActivity::class.java).apply {
-                    // Pass the title to query for registrations
                     putExtra("EVENT_TITLE", event.title)
                 }
                 itemView.context.startActivity(intent)
             }
 
-            deleteButton.setOnClickListener {
-                onDeleteClick(event)
-            }
+            completeButton.setOnClickListener { onCompleteClick(event) }
+            deleteButton.setOnClickListener { onDeleteClick(event) }
         }
     }
 }

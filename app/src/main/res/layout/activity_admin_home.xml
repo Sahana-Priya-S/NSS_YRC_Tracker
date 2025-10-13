@@ -1,77 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@color/background_light">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="2"
-        android:gravity="center_vertical"
-        android:padding="8dp">
+        android:background="@color/primary"
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/adminDashboardTitle"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="Admin Dashboard"
             android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:layout_gravity="start|center_vertical"/>
 
         <Button
             android:id="@+id/logoutButton"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Logout" />
-    </LinearLayout>
+            android:text="Logout"
+            android:textColor="@color/white"
+            android:layout_gravity="end|center_vertical"/>
+    </FrameLayout>
 
-    <LinearLayout
+    <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        android:columnCount="2"
+        android:padding="12dp">
 
         <Button
             android:id="@+id/addEventButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_columnWeight="1"
+            android:layout_gravity="fill_horizontal"
             android:text="Add Event"
-            android:layout_marginEnd="4dp"/>
+            android:textColor="@color/primary"/>
 
         <Button
             android:id="@+id/manageEventsButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Manage Events"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"/>
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_columnWeight="1"
+            android:layout_gravity="fill_horizontal"
+            android:text="Manage"
+            android:textColor="@color/primary"/>
 
         <Button
             android:id="@+id/approvalsButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_columnWeight="1"
+            android:layout_gravity="fill_horizontal"
             android:text="Approvals"
-            android:layout_marginStart="4dp"/>
-    </LinearLayout>
+            android:textColor="@color/primary"/>
+
+        <Button
+            android:id="@+id/archivesButton"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_columnWeight="1"
+            android:layout_gravity="fill_horizontal"
+            android:text="Archives"
+            android:textColor="@color/primary"/>
+    </GridLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0" />
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Available Events"
-        android:textSize="20sp"
+        android:text="Upcoming Events"
+        android:textSize="18sp"
         android:textStyle="bold"
-        android:padding="8dp"
-        android:layout_marginTop="16dp"/>
+        android:textColor="@color/text_primary"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/adminEventsRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingVertical="8dp"/>
 </LinearLayout>

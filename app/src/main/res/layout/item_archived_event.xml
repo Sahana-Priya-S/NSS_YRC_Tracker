@@ -6,7 +6,7 @@
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    app:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,16 +15,16 @@
         android:padding="16dp">
 
         <TextView
-            android:id="@+id/eventTitle"
+            android:id="@+id/eventTitleTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Event Title"
             android:textSize="18sp"
-            android:textColor="@color/text_primary"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"/>
 
         <TextView
-            android:id="@+id/eventDate"
+            android:id="@+id/eventDateTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Event Date"
@@ -32,21 +32,21 @@
             android:layout_marginTop="4dp"/>
 
         <TextView
-            android:id="@+id/eventDescription"
+            android:id="@+id/statusTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Event Description"
-            android:textColor="@color/text_secondary"
+            android:text="Status: Completed"
+            android:textStyle="italic"
             android:layout_marginTop="8dp"/>
 
         <Button
-            android:id="@+id/registerButton"
+            android:id="@+id/viewSubmissionsButton"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Register"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/background_button_primary"
-            android:textColor="@color/white"
-            android:paddingHorizontal="24dp"/>
+            android:text="View Submissions"
+            android:textColor="@color/primary"
+            android:layout_marginTop="12dp"
+            android:layout_gravity="end"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -15,29 +15,27 @@
         android:theme="@style/Theme.NSS_YRCTracker">
 
         <activity
-            android:name=".LoginActivity"
-            android:exported="true"
-            android:theme="@style/Theme.NSS_YRCTracker" />
-
-        <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.NSS_YRCTracker">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".LoginActivity" />
         <activity android:name=".HomeActivity" />
         <activity android:name=".AdminHomeActivity" />
         <activity android:name=".StudentHomeActivity" />
         <activity android:name=".AddEventActivity" />
         <activity android:name=".ManageEventsActivity" />
-        <activity android:name=".EventDetailsActivity" />
         <activity android:name=".EditEventActivity" />
         <activity android:name=".ViewRegistrationsActivity" />
         <activity android:name=".SubmitProofActivity" />
-    </application>
+        <activity android:name=".ApprovalsActivity" />
+        <activity android:name=".MySubmissionsActivity" />
+        <activity android:name=".AchievementsActivity" />
+        <activity android:name=".ArchivesActivity" />
 
+    </application>
 </manifest>

@@ -10,14 +10,15 @@ import com.google.firebase.firestore.FirebaseFirestore
 class EditEventActivity : AppCompatActivity() {
 
     private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var eventId: String // Change this to eventId
+    private lateinit var eventId: String // We will use the unique ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_event)
 
-        eventId = intent.getStringExtra("EVENT_ID") ?: "" // Use EVENT_ID
+        eventId = intent.getStringExtra("EVENT_ID") ?: ""
         if (eventId.isEmpty()) {
+            Toast.makeText(this, "Error: Event ID is missing.", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -27,6 +28,7 @@ class EditEventActivity : AppCompatActivity() {
         val descriptionEditText = findViewById<EditText>(R.id.eventDescriptionEditText)
         val saveButton = findViewById<Button>(R.id.saveChangesButton)
 
+        // Load current event data using the unique ID
         firestore.collection("events").document(eventId).get()
             .addOnSuccessListener { doc ->
                 val event = doc.toObject(Event::class.java)
@@ -38,17 +40,26 @@ class EditEventActivity : AppCompatActivity() {
             }
 
         saveButton.setOnClickListener {
-            val newTitle = titleEditText.text.toString()
-            val newDate = dateEditText.text.toString()
-            val newDescription = descriptionEditText.text.toString()
+            val newTitle = titleEditText.text.toString().trim()
+            val newDate = dateEditText.text.toString().trim()
+            val newDescription = descriptionEditText.text.toString().trim()
 
-            // For simplicity, we assume the title (document ID) doesn't change.
-            // A more complex app would handle title changes by deleting the old doc and creating a new one.
-            val updatedEvent = Event(newTitle, newDate, newDescription)
+            if (newTitle.isEmpty() || newDate.isEmpty() || newDescription.isEmpty()) {
+                Toast.makeText(this, "Please fill all fields.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Create the updated event object, keeping the original ID
+            val updatedEvent = Event(eventId, newTitle, newDate, newDescription)
+
+            // **FIX #3**: Use the unique ID to update the document in Firestore
             firestore.collection("events").document(eventId).set(updatedEvent)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Event updated!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Event updated successfully!", Toast.LENGTH_SHORT).show()
                     finish()
+                }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Failed to update event.", Toast.LENGTH_SHORT).show()
                 }
         }
     }
