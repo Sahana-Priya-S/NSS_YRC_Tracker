@@ -20,7 +20,7 @@ class ManageEventsActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.manageEventsRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // **FIX IS HERE**: Update the adapter initialization to pass both functions
+        // The adapter is now simpler, only needing handlers for complete and delete
         adapter = ManageEventAdapter(
             emptyList(),
             onCompleteClick = { event -> markEventAsCompleted(event) },

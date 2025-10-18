@@ -34,39 +34,32 @@ class ManageEventAdapter(
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val titleTextView: TextView = itemView.findViewById(R.id.eventTitleTextView)
-        private val editButton: Button = itemView.findViewById(R.id.editEventButton)
-        private val viewRegButton: Button = itemView.findViewById(R.id.viewRegistrationsButton)
-        private val deleteButton: Button = itemView.findViewById(R.id.deleteEventButton)
-        private val completeButton: Button = itemView.findViewById(R.id.completeEventButton)
+        private val editEventButton: Button = itemView.findViewById(R.id.editEventButton)
+        private val viewRegistrationsButton: Button = itemView.findViewById(R.id.viewRegistrationsButton)
+        private val deleteEventButton: Button = itemView.findViewById(R.id.deleteEventButton)
+        private val completeEventButton: Button = itemView.findViewById(R.id.completeEventButton)
 
-        private val editTimeButton: Button = itemView.findViewById(R.id.editTimeButton)
         fun bind(event: Event) {
             titleTextView.text = event.title
 
-            editButton.setOnClickListener {
+            // Navigation is handled here
+            editEventButton.setOnClickListener {
                 val intent = Intent(itemView.context, EditEventActivity::class.java).apply {
                     putExtra("EVENT_ID", event.id)
                 }
                 itemView.context.startActivity(intent)
             }
 
-            editTimeButton.setOnClickListener {
-                val intent = Intent(itemView.context, EditTimeActivity::class.java).apply {
-                    putExtra("EVENT_ID", event.id)
-                }
-                itemView.context.startActivity(intent)
-            }
-
-            // This is correct: it passes the title for querying submissions
-            viewRegButton.setOnClickListener {
+            viewRegistrationsButton.setOnClickListener {
                 val intent = Intent(itemView.context, ViewRegistrationsActivity::class.java).apply {
                     putExtra("EVENT_TITLE", event.title)
                 }
                 itemView.context.startActivity(intent)
             }
 
-            completeButton.setOnClickListener { onCompleteClick(event) }
-            deleteButton.setOnClickListener { onDeleteClick(event) }
+            // Actions are passed up to the Activity
+            completeEventButton.setOnClickListener { onCompleteClick(event) }
+            deleteEventButton.setOnClickListener { onDeleteClick(event) }
         }
     }
 }

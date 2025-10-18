@@ -10,7 +10,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 class EditEventActivity : AppCompatActivity() {
 
     private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var eventId: String // We will use the unique ID
+    private lateinit var eventId: String
+    private var currentEvent: Event? = null
+
+    private lateinit var startAttendanceButton: Button
+    private lateinit var stopAttendanceButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,15 +31,18 @@ class EditEventActivity : AppCompatActivity() {
         val dateEditText = findViewById<EditText>(R.id.eventDateEditText)
         val descriptionEditText = findViewById<EditText>(R.id.eventDescriptionEditText)
         val saveButton = findViewById<Button>(R.id.saveChangesButton)
+        startAttendanceButton = findViewById(R.id.startAttendanceButton)
+        stopAttendanceButton = findViewById(R.id.stopAttendanceButton)
 
-        // Load current event data using the unique ID
+        // Load current event data
         firestore.collection("events").document(eventId).get()
             .addOnSuccessListener { doc ->
-                val event = doc.toObject(Event::class.java)
-                event?.let {
+                currentEvent = doc.toObject(Event::class.java)
+                currentEvent?.let {
                     titleEditText.setText(it.title)
                     dateEditText.setText(it.date)
                     descriptionEditText.setText(it.description)
+                    updateAttendanceButtons(it.attendanceActive)
                 }
             }
 
@@ -48,18 +55,37 @@ class EditEventActivity : AppCompatActivity() {
                 Toast.makeText(this, "Please fill all fields.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            updateEventDetails(newTitle, newDate, newDescription)
+        }
 
-            // Create the updated event object, keeping the original ID
-            val updatedEvent = Event(eventId, newTitle, newDate, newDescription)
+        startAttendanceButton.setOnClickListener { updateAttendanceStatus(true) }
+        stopAttendanceButton.setOnClickListener { updateAttendanceStatus(false) }
+    }
 
-            // **FIX #3**: Use the unique ID to update the document in Firestore
+    private fun updateAttendanceStatus(isActive: Boolean) {
+        firestore.collection("events").document(eventId)
+            .update("attendanceActive", isActive)
+            .addOnSuccessListener {
+                val status = if (isActive) "started" else "stopped"
+                Toast.makeText(this, "Attendance has been $status.", Toast.LENGTH_SHORT).show()
+                updateAttendanceButtons(isActive)
+            }
+    }
+
+    private fun updateAttendanceButtons(isActive: Boolean) {
+        startAttendanceButton.isEnabled = !isActive
+        stopAttendanceButton.isEnabled = isActive
+    }
+
+    private fun updateEventDetails(title: String, date: String, description: String) {
+        currentEvent?.let {
+            val updatedEvent = it.copy(title = title, date = date, description = description)
             firestore.collection("events").document(eventId).set(updatedEvent)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Event updated successfully!", Toast.LENGTH_SHORT).show()
-                    finish()
+                    Toast.makeText(this, "Event details updated successfully!", Toast.LENGTH_SHORT).show()
                 }
                 .addOnFailureListener {
-                    Toast.makeText(this, "Failed to update event.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Failed to update event details.", Toast.LENGTH_SHORT).show()
                 }
         }
     }

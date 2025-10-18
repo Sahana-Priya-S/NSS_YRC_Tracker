@@ -26,24 +26,16 @@
         <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="2"
+            android:columnCount="3"
             android:layout_marginTop="16dp">
 
             <Button
-                android:id="@+id/startAttendanceButton"
+                android:id="@+id/editEventButton"
                 style="@style/Widget.AppCompat.Button.Borderless"
                 android:layout_columnWeight="1"
                 android:layout_gravity="fill_horizontal"
-                android:text="Start"
-                android:textColor="@color/status_green"/>
-
-            <Button
-                android:id="@+id/stopAttendanceButton"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:text="Stop"
-                android:textColor="@color/status_red"/>
+                android:text="Manage"
+                android:textColor="@color/primary"/>
 
             <Button
                 android:id="@+id/editTimeButton"
@@ -62,20 +54,13 @@
                 android:textColor="@color/primary"/>
 
             <Button
-                android:id="@+id/editEventButton"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:text="Edit Details"
-                android:textColor="@color/primary"/>
-
-            <Button
                 android:id="@+id/viewRegistrationsButton"
                 style="@style/Widget.AppCompat.Button.Borderless"
                 android:layout_columnWeight="1"
                 android:layout_gravity="fill_horizontal"
                 android:text="View Subs"
                 android:textColor="@color/primary"/>
+
         </GridLayout>
 
         <Button
@@ -85,6 +70,6 @@
             android:text="Delete"
             android:backgroundTint="@color/status_red"
             android:textColor="@color/white"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="16dp"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>
