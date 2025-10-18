@@ -1,5 +1,6 @@
 package com.example.nss_yrctracker
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -22,15 +23,27 @@ class EventsFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_events, container, false)
 
         val recyclerView: RecyclerView = view.findViewById(R.id.eventsRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
 
-        eventAdapter = EventAdapter(emptyList(), registeredEvents) { event ->
-            registerForEvent(event)
-        }
+        // **FIX #2**: Update the adapter initialization to pass all click handlers
+        eventAdapter = EventAdapter(
+            emptyList(),
+            registeredEvents,
+            onEventClick = { event ->
+                // Open the detail screen when an event is clicked
+                val intent = Intent(context, EventDetailActivity::class.java).apply {
+                    putExtra("EVENT_ID", event.id)
+                }
+                startActivity(intent)
+            },
+            onRegisterClick = { event ->
+                // Handle the registration click
+                registerForEvent(event)
+            }
+        )
         recyclerView.adapter = eventAdapter
 
         loadRegisteredEventsAndThenAllEvents()

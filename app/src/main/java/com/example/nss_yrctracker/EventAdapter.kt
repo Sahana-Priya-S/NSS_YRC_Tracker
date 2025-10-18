@@ -10,7 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class EventAdapter(
     private var eventList: List<Event>,
-    private var registeredEventTitles: Set<String>, // Keep track of registered events
+    private var registeredEventTitles: Set<String>,
+    private val onEventClick: (Event) -> Unit, // Add this for item clicks
     private val onRegisterClick: (Event) -> Unit
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
@@ -43,6 +44,11 @@ class EventAdapter(
             eventTitle.text = event.title
             eventDate.text = event.date
             eventDescription.text = event.description
+
+            // **FIX #1**: Make the whole item clickable
+            itemView.setOnClickListener {
+                onEventClick(event)
+            }
 
             if (isRegistered) {
                 registerButton.text = "Registered"

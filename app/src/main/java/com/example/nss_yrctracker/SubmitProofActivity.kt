@@ -14,6 +14,9 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class SubmitProofActivity : AppCompatActivity() {
@@ -29,8 +32,9 @@ class SubmitProofActivity : AppCompatActivity() {
     private lateinit var submitProofButton: Button
 
     private var selectedImageUri: Uri? = null
-    private var eventsList = mutableListOf<Event>()
-    private var isSubmitting = false // **FIX #1: Flag to prevent double submission**
+    // This will now hold only the events the student is eligible to submit for
+    private var eligibleEventsList = mutableListOf<Event>()
+    private var isSubmitting = false
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
@@ -53,45 +57,76 @@ class SubmitProofActivity : AppCompatActivity() {
         selectImageButton.setOnClickListener { pickImage.launch("image/*") }
         submitProofButton.setOnClickListener { checkAndUploadProof() }
 
-        loadEventsIntoSpinner()
+        // Load only the events the user can submit for
+        loadEligibleEventsForSubmission()
     }
 
-    private fun loadEventsIntoSpinner() {
-        firestore.collection("events").get().addOnSuccessListener { snapshot ->
-            eventsList = snapshot.toObjects(Event::class.java)
-            val eventTitles = eventsList.map { it.title }
-            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, eventTitles)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            eventsSpinner.adapter = adapter
-        }
-    }
-
-    private fun checkAndUploadProof() {
-        // **FIX #2: Prevent submission if one is already in progress**
-        if (isSubmitting) {
-            Toast.makeText(this, "Submission in progress...", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (eventsList.isEmpty() || eventsSpinner.selectedItemPosition < 0) {
-            Toast.makeText(this, "Please select an event.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val selectedEvent = eventsList[eventsSpinner.selectedItemPosition]
+    private fun loadEligibleEventsForSubmission() {
         val userId = auth.currentUser?.uid
-
-        if (selectedEvent.id.isEmpty()) {
-            Toast.makeText(this, "This event cannot be submitted for (missing ID).", Toast.LENGTH_LONG).show()
-            return
-        }
-
         if (userId == null) {
             Toast.makeText(this, "You must be logged in.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        setSubmitting(true) // Disable button and set flag
+        // 1. Get all events the user has attended
+        firestore.collection("attendance")
+            .whereEqualTo("userId", userId)
+            .get()
+            .addOnSuccessListener { attendanceSnapshot ->
+                if (attendanceSnapshot.isEmpty) {
+                    Toast.makeText(this, "You have not attended any events yet.", Toast.LENGTH_LONG).show()
+                    return@addOnSuccessListener
+                }
 
+                val attendedEventIds = attendanceSnapshot.documents.mapNotNull { it.getString("eventId") }
+
+                // 2. Get the details for those attended events
+                firestore.collection("events")
+                    .whereIn("id", attendedEventIds)
+                    .get()
+                    .addOnSuccessListener { eventsSnapshot ->
+                        val today = Date()
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+                        // 3. Filter for events that are over
+                        eligibleEventsList = eventsSnapshot.toObjects(Event::class.java).filter { event ->
+                            try {
+                                val eventDate = dateFormat.parse(event.date)
+                                // The event is eligible if its date is before today
+                                eventDate != null && eventDate.before(today)
+                            } catch (e: Exception) {
+                                false
+                            }
+                        }.toMutableList()
+
+                        // 4. Populate the spinner with the filtered list
+                        if (eligibleEventsList.isNotEmpty()) {
+                            val eventTitles = eligibleEventsList.map { it.title }
+                            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, eventTitles)
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                            eventsSpinner.adapter = adapter
+                        } else {
+                            Toast.makeText(this, "No past, attended events are available for submission.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+            }
+    }
+
+    private fun checkAndUploadProof() {
+        if (isSubmitting) {
+            Toast.makeText(this, "Submission in progress...", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (eligibleEventsList.isEmpty()) {
+            Toast.makeText(this, "There are no eligible events to submit for.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val selectedEvent = eligibleEventsList[eventsSpinner.selectedItemPosition]
+        val userId = auth.currentUser?.uid!!
+
+        setSubmitting(true)
+
+        // The logic to check for duplicate submissions is still valid and important
         firestore.collection("submissions")
             .whereEqualTo("userId", userId)
             .whereEqualTo("eventId", selectedEvent.id)
@@ -101,17 +136,18 @@ class SubmitProofActivity : AppCompatActivity() {
                     uploadProof()
                 } else {
                     Toast.makeText(this, "You have already submitted proof for this event.", Toast.LENGTH_LONG).show()
-                    setSubmitting(false) // Re-enable button
+                    setSubmitting(false)
                 }
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Error checking for existing submissions.", Toast.LENGTH_SHORT).show()
-                setSubmitting(false) // Re-enable button
+                setSubmitting(false)
             }
     }
 
+    // The rest of the functions (uploadProof, saveSubmissionToFirestore, setSubmitting) remain the same
     private fun uploadProof() {
-        val selectedEvent = eventsList[eventsSpinner.selectedItemPosition]
+        val selectedEvent = eligibleEventsList[eventsSpinner.selectedItemPosition]
         val summary = summaryEditText.text.toString().trim()
         val userId = auth.currentUser?.uid!!
 
@@ -157,7 +193,6 @@ class SubmitProofActivity : AppCompatActivity() {
             }
     }
 
-    // **FIX #3: Helper function to manage the UI state**
     private fun setSubmitting(submitting: Boolean) {
         isSubmitting = submitting
         submitProofButton.isEnabled = !submitting

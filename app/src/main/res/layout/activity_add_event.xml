@@ -1,34 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="24dp"
+    android:background="@color/background_light">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/create_new_event"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/primary_dark"
+        android:layout_marginBottom="24dp"/>
 
     <EditText
         android:id="@+id/eventTitleEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Event Title" />
+        android:hint="@string/event_title_hint"
+        android:background="@drawable/background_edittext"
+        android:padding="14dp"
+        android:inputType="textCapWords"/>
 
     <EditText
         android:id="@+id/eventDateEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Event Date (e.g., YYYY-MM-DD)"
-        android:layout_marginTop="8dp" />
+        android:hint="@string/event_date_hint"
+        android:background="@drawable/background_edittext"
+        android:padding="14dp"
+        android:layout_marginTop="16dp"
+        android:inputType="date"/>
 
     <EditText
         android:id="@+id/eventDescriptionEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Event Description"
-        android:layout_marginTop="8dp" />
+        android:hint="@string/event_description_hint"
+        android:background="@drawable/background_edittext"
+        android:padding="14dp"
+        android:layout_marginTop="16dp"
+        android:inputType="textMultiLine"
+        android:minLines="2"/>
+
+    <Button
+        android:id="@+id/selectLocationButton"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/select_location"
+        android:textColor="@color/primary"
+        android:layout_marginTop="16dp"/>
+
+    <TextView
+        android:id="@+id/locationTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/no_location_selected"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/text_secondary"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/startTimeButton"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Set Start Time"/>
+
+        <Button
+            android:id="@+id/endTimeButton"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Set End Time"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/timeWindowTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No time window set"
+        android:gravity="center"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="8dp"/>
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 
     <Button
         android:id="@+id/saveEventButton"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Save Event"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="16dp" />
+        android:text="@string/save_event"
+        android:background="@drawable/background_button_primary"
+        android:textColor="@color/white"
+        android:minHeight="56dp"/>
 </LinearLayout>

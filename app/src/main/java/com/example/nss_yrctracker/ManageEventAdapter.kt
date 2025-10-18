@@ -39,11 +39,19 @@ class ManageEventAdapter(
         private val deleteButton: Button = itemView.findViewById(R.id.deleteEventButton)
         private val completeButton: Button = itemView.findViewById(R.id.completeEventButton)
 
+        private val editTimeButton: Button = itemView.findViewById(R.id.editTimeButton)
         fun bind(event: Event) {
             titleTextView.text = event.title
 
             editButton.setOnClickListener {
                 val intent = Intent(itemView.context, EditEventActivity::class.java).apply {
+                    putExtra("EVENT_ID", event.id)
+                }
+                itemView.context.startActivity(intent)
+            }
+
+            editTimeButton.setOnClickListener {
+                val intent = Intent(itemView.context, EditTimeActivity::class.java).apply {
                     putExtra("EVENT_ID", event.id)
                 }
                 itemView.context.startActivity(intent)

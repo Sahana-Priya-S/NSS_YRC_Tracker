@@ -74,6 +74,9 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
     implementation("androidx.fragment:fragment-ktx:1.5.3")
 
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.libraries.places:places:3.4.0")
+
 // RecyclerView + CardView
     implementation ("androidx.recyclerview:recyclerview:1.3.0")
     implementation ("androidx.cardview:cardview:1.0.0")
