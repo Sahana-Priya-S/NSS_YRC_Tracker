@@ -20,6 +20,11 @@ class StudentHomeActivity : AppCompatActivity() {
         val logoutButton = findViewById<Button>(R.id.logoutButton)
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         val fab = findViewById<FloatingActionButton>(R.id.fab_submit_proof)
+        val profileButton = findViewById<Button>(R.id.profileButton)
+
+        profileButton.setOnClickListener {
+            startActivity(Intent(this, StudentProfileActivity::class.java))
+        }
 
         logoutButton.setOnClickListener {
             auth.signOut()

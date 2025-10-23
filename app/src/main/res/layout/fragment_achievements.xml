@@ -2,12 +2,22 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@color/background_light">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/achievementsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingVertical="8dp"/>
 
     <TextView
+        android:id="@+id/noAchievementsTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Achievements feature is coming soon!"
+        android:text="No achievements earned yet."
         android:layout_gravity="center"
-        android:textSize="18sp"/>
+        android:textSize="18sp"
+        android:visibility="gone"/>
+
 </FrameLayout>

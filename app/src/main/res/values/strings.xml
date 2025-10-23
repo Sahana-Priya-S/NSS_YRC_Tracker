@@ -17,6 +17,11 @@
     <string name="view_registrations">View Registrations</string>
     <string name="event_title">Event Title</string>
 
+    <string name="title_events">Events</string>
+    <string name="title_manage">Manage</string>
+    <string name="title_approvals">Approvals</string>
+    <string name="title_archives">Archives</string>
+
     <string-array name="roles">
         <item>Student</item>
         <item>Admin</item>

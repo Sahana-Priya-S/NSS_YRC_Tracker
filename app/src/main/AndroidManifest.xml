@@ -43,6 +43,8 @@
         <activity android:name=".ArchivesActivity" />
         <activity android:name=".EventDetailActivity" />
         <activity android:name=".EditTimeActivity" />
+        <activity android:name=".AttendanceReportActivity" />
+        <activity android:name=".StudentProfileActivity" />
 
     </application>
 </manifest>

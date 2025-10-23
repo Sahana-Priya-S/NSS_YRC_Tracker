@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
@@ -23,35 +25,40 @@ class AdminHomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_admin_home)
 
-        setupButtons()
-        setupRecyclerView()
-        loadEvents()
-    }
-
-    private fun setupButtons() {
         val logoutButton = findViewById<Button>(R.id.logoutButton)
-        val addEventButton = findViewById<Button>(R.id.addEventButton)
-        val manageEventsButton = findViewById<Button>(R.id.manageEventsButton)
-        val approvalsButton = findViewById<Button>(R.id.approvalsButton)
-        val archivesButton = findViewById<Button>(R.id.archivesButton)
+        val fabAddEvent = findViewById<FloatingActionButton>(R.id.fab_add_event)
+        val bottomNavAdmin = findViewById<BottomNavigationView>(R.id.bottom_navigation_admin)
 
         logoutButton.setOnClickListener {
             auth.signOut()
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }
-        addEventButton.setOnClickListener {
+
+        fabAddEvent.setOnClickListener {
             startActivity(Intent(this, AddEventActivity::class.java))
         }
-        manageEventsButton.setOnClickListener {
-            startActivity(Intent(this, ManageEventsActivity::class.java))
+
+        // Handle Bottom Navigation Clicks using correct IDs
+        bottomNavAdmin.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_admin_events -> {
+                    // Current screen, do nothing special here, list updates automatically
+                }
+                R.id.nav_manage -> startActivity(Intent(this, ManageEventsActivity::class.java))
+                R.id.nav_approvals -> startActivity(Intent(this, ApprovalsActivity::class.java))
+                R.id.nav_archives -> startActivity(Intent(this, ArchivesActivity::class.java))
+                else -> return@setOnItemSelectedListener false // Handle unknown items
+            }
+            // Return true only for the current screen's item
+            item.itemId == R.id.nav_admin_events
         }
-        approvalsButton.setOnClickListener {
-            startActivity(Intent(this, ApprovalsActivity::class.java))
-        }
-        archivesButton.setOnClickListener {
-            startActivity(Intent(this, ArchivesActivity::class.java))
-        }
+
+        // Set 'Events' as selected by default
+        bottomNavAdmin.selectedItemId = R.id.nav_admin_events
+
+        setupRecyclerView()
+        loadEvents()
     }
 
     private fun setupRecyclerView() {
@@ -85,7 +92,11 @@ class AdminHomeActivity : AppCompatActivity() {
     private fun loadEvents() {
         firestore.collection("events")
             .whereEqualTo("status", "active")
-            .addSnapshotListener { snapshot, _ ->
+            .addSnapshotListener { snapshot, error -> // Added error handling
+                if (error != null) {
+                    Toast.makeText(this, "Error loading events.", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
                 val events = snapshot?.toObjects(Event::class.java) ?: emptyList()
                 adminEventAdapter.updateEvents(events)
                 checkForPastEventsAndArchive(events)
@@ -112,7 +123,7 @@ class AdminHomeActivity : AppCompatActivity() {
                         .update("status", "archived")
                 }
             } catch (e: Exception) {
-                // Ignore events with incorrectly formatted dates
+                // Ignore errors parsing dates
             }
         }
     }
