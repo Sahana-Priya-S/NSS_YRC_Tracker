@@ -42,7 +42,7 @@ class ArchivedEventAdapter(
 
             // **FIX IS HERE**: Add the click listener
             viewSubmissionsButton.setOnClickListener {
-                val intent = Intent(itemView.context, ViewRegistrationsActivity::class.java).apply {
+                val intent = Intent(itemView.context, EventParticipantsActivity::class.java).apply {
                     putExtra("EVENT_TITLE", event.title)
                 }
                 itemView.context.startActivity(intent)

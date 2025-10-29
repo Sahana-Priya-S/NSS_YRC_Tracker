@@ -41,9 +41,11 @@ class AdminEventAdapter(
             date.text = event.date
             description.text = event.description
 
+            // Set button functionality from the constructor
             startButton.setOnClickListener { onStartClick(event) }
             stopButton.setOnClickListener { onStopClick(event) }
 
+            // Visually update buttons based on event status
             if(event.attendanceActive) {
                 startButton.isEnabled = false
                 stopButton.isEnabled = true

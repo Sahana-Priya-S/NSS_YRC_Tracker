@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 
 class ManageEventAdapter(
@@ -44,14 +45,24 @@ class ManageEventAdapter(
 
             // Navigation is handled here
             editEventButton.setOnClickListener {
-                val intent = Intent(itemView.context, EditEventActivity::class.java).apply {
+                if (event.id.isNullOrEmpty() || event.title.isNullOrEmpty()) {
+                    Toast.makeText(itemView.context, "Cannot view participants: Event data incomplete.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val intent = Intent(itemView.context, EventParticipantsActivity::class.java).apply {
                     putExtra("EVENT_ID", event.id)
+                    putExtra("EVENT_TITLE", event.title)
                 }
                 itemView.context.startActivity(intent)
             }
 
             viewRegistrationsButton.setOnClickListener {
-                val intent = Intent(itemView.context, ViewRegistrationsActivity::class.java).apply {
+                if (event.id.isNullOrEmpty() || event.title.isNullOrEmpty()) {
+                    Toast.makeText(itemView.context, "Cannot view participants: Event data incomplete.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val intent = Intent(itemView.context, EventParticipantsActivity::class.java).apply {
+                    putExtra("EVENT_ID", event.id)
                     putExtra("EVENT_TITLE", event.title)
                 }
                 itemView.context.startActivity(intent)

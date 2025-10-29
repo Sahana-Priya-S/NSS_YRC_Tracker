@@ -35,7 +35,7 @@
         <activity android:name=".AddEventActivity" />
         <activity android:name=".ManageEventsActivity" />
         <activity android:name=".EditEventActivity" />
-        <activity android:name=".ViewRegistrationsActivity" />
+        <activity android:name=".EventParticipantsActivity" />
         <activity android:name=".SubmitProofActivity" />
         <activity android:name=".ApprovalsActivity" />
         <activity android:name=".MySubmissionsActivity" />
