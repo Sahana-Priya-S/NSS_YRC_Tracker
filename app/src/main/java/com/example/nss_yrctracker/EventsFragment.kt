@@ -120,6 +120,7 @@ class EventsFragment : Fragment() {
         Log.d(TAG, "Attempting registration for event: ${event.title}, user: $userId")
         val registrationDoc = mapOf("userId" to userId, "eventTitle" to event.title)
 
+
         // Using event title for registration ID might cause issues if titles change.
         // Consider using event.id if possible, requires changing registration logic/queries.
         firestore.collection("registrations").document("$userId-${event.title}")
