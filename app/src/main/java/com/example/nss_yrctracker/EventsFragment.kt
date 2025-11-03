@@ -115,6 +115,8 @@ class EventsFragment : Fragment() {
             }
     }
 
+
+
     private fun registerForEvent(event: Event) {
         val userId = auth.currentUser?.uid ?: return
         Log.d(TAG, "Attempting registration for event: ${event.title}, user: $userId")
