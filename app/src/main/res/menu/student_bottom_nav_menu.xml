@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_admin_events"
+        android:icon="@drawable/ic_events"
+        android:title="Events" />
+    <item
+        android:id="@+id/nav_admin_manage"
+        android:icon="@drawable/ic_manage"
+        android:title="Manage" />
+    <item
+        android:id="@+id/nav_admin_approvals"
+        android:icon="@drawable/ic_approvals"
+        android:title="Approvals" />
+    <item
+        android:id="@+id/nav_admin_archives"
+        android:icon="@drawable/ic_archives"
+        android:title="Archives" />
+
+    <item
+        android:id="@+id/nav_admin_chat"
+        android:icon="@drawable/ic_submissions"
+        android:title="Chat" />
+</menu>

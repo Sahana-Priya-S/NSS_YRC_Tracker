@@ -1,14 +1,16 @@
 package com.example.nss_yrctracker
-
 data class Event(
-    var id: String = "",
+    val id: String = "",
     val title: String = "",
     val date: String = "",
     val description: String = "",
-    var status: String = "active",
+    val location: String = "",
+    val status: String = "STOPPED",
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
-    var attendanceActive: Boolean = false,
-    var attendanceStartTime: Long = 0,
-    var attendanceEndTime: Long = 0
+    val timestamp: Long = 0,
+    val isArchived: Boolean = false,
+    val allottedHours: Int = 0,
+    val startTime: String = "",
+    val endTime: String = ""
 )

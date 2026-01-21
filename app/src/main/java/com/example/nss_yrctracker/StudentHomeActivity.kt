@@ -2,56 +2,39 @@ package com.example.nss_yrctracker
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import android.widget.ImageButton
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 
 class StudentHomeActivity : AppCompatActivity() {
-
-    private val auth = FirebaseAuth.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_student_home)
 
-        val logoutButton = findViewById<Button>(R.id.logoutButton)
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        val fab = findViewById<FloatingActionButton>(R.id.fab_submit_proof)
-        val profileButton = findViewById<Button>(R.id.profileButton)
-
-        profileButton.setOnClickListener {
-            startActivity(Intent(this, StudentProfileActivity::class.java))
-        }
-
-        logoutButton.setOnClickListener {
-            auth.signOut()
-            startActivity(Intent(this, MainActivity::class.java))
+        // 1. Setup Logout Logic
+        // This button must be in activity_student_home.xml, NOT inside the fragment
+        val btnLogout = findViewById<ImageButton>(R.id.btnStudentLogout)
+        btnLogout.setOnClickListener {
+            FirebaseAuth.getInstance().signOut()
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            Toast.makeText(this, "Logged Out", Toast.LENGTH_SHORT).show()
             finish()
         }
 
-        fab.setOnClickListener {
-            startActivity(Intent(this, SubmitProofActivity::class.java))
-        }
-
-        bottomNav.setOnItemSelectedListener { item ->
-            var selectedFragment: Fragment? = null
-            when (item.itemId) {
-                R.id.nav_events -> selectedFragment = EventsFragment()
-                R.id.nav_my_submissions -> selectedFragment = MySubmissionsFragment()
-                R.id.nav_achievements -> selectedFragment = AchievementsFragment()
-            }
-            if (selectedFragment != null) {
-                supportFragmentManager.beginTransaction().replace(R.id.fragment_container, selectedFragment).commit()
-            }
-            true
-        }
-
+        // 2. Load the Student Dashboard Fragment (The list of events)
         if (savedInstanceState == null) {
-            bottomNav.selectedItemId = R.id.nav_events
-            supportFragmentManager.beginTransaction().replace(R.id.fragment_container, EventsFragment()).commit()
+            loadFragment(StudentHomeFragment())
         }
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .commit()
     }
 }

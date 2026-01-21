@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-
-    <style name="Theme.NSS_YRCTracker" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="colorAccent">@color/secondary</item>
+    <style name="Theme.NSS_YRCTracker" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary_emerald</item>
+        <item name="colorSecondary">@color/accent_mint</item>
+        <item name="android:windowBackground">@color/soft_green_bg</item>
+        <item name="android:statusBarColor">@color/soft_green_bg</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
-
 </resources>

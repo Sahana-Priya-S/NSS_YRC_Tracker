@@ -1,5 +1,6 @@
 package com.example.nss_yrctracker
 
+import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
 import android.widget.Button
@@ -13,131 +14,154 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.widget.Autocomplete
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
 import com.google.firebase.firestore.FirebaseFirestore
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 class AddEventActivity : AppCompatActivity() {
 
-    private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var locationTextView: TextView
-    private lateinit var timeWindowTextView: TextView
-    private var eventLatitude: Double = 0.0
-    private var eventLongitude: Double = 0.0
-    private var startTime: Long = 0
-    private var endTime: Long = 0
+    // UI Components
+    private lateinit var etTitle: EditText
+    private lateinit var etDate: EditText
+    private lateinit var etDesc: EditText
+    private lateinit var etAllottedHours: EditText
 
-    private val startAutocomplete =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                val intent = result.data
-                if (intent != null) {
-                    val place = Autocomplete.getPlaceFromIntent(intent)
-                    eventLatitude = place.latLng?.latitude ?: 0.0
-                    eventLongitude = place.latLng?.longitude ?: 0.0
-                    locationTextView.text = getString(R.string.location_selected, place.name)
+    private lateinit var btnLocation: Button
+    private lateinit var tvLocationStatus: TextView
+
+    private lateinit var btnStart: Button
+    private lateinit var btnEnd: Button
+    private lateinit var tvTimeStatus: TextView
+    private lateinit var btnSave: Button
+
+    private val db = FirebaseFirestore.getInstance()
+
+    // Data Variables
+    private var selectedDateStr: String = ""
+    private var startTimeStr: String = ""
+    private var endTimeStr: String = ""
+    private var selectedLocationName: String = ""
+    private var selectedLat: Double = 0.0
+    private var selectedLng: Double = 0.0
+    private var finalTimestamp: Long = 0
+
+    // Google Places Launcher
+    private val startAutocomplete = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val intent = result.data
+            if (intent != null) {
+                val place = Autocomplete.getPlaceFromIntent(intent)
+                selectedLocationName = place.name ?: "Unknown"
+                tvLocationStatus.text = "📍 $selectedLocationName"
+
+                if (place.latLng != null) {
+                    selectedLat = place.latLng!!.latitude
+                    selectedLng = place.latLng!!.longitude
                 }
             }
         }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_event)
 
+        // Initialize Places
         if (!Places.isInitialized()) {
             Places.initialize(applicationContext, getString(R.string.google_maps_key))
         }
 
-        val titleEditText = findViewById<EditText>(R.id.eventTitleEditText)
-        val dateEditText = findViewById<EditText>(R.id.eventDateEditText)
-        val descriptionEditText = findViewById<EditText>(R.id.eventDescriptionEditText)
-        val selectLocationButton = findViewById<Button>(R.id.selectLocationButton)
-        locationTextView = findViewById(R.id.locationTextView)
-        val startTimeButton = findViewById<Button>(R.id.startTimeButton)
-        val endTimeButton = findViewById<Button>(R.id.endTimeButton)
-        timeWindowTextView = findViewById(R.id.timeWindowTextView)
-        val saveButton = findViewById<Button>(R.id.saveEventButton)
+        // Bind Views
+        etTitle = findViewById(R.id.etEventTitle)
+        etDate = findViewById(R.id.etEventDate)
+        etDesc = findViewById(R.id.etEventDescription)
+        etAllottedHours = findViewById(R.id.etAllottedHours)
 
-        selectLocationButton.setOnClickListener { launchPlacePicker() }
-        startTimeButton.setOnClickListener { showTimePicker(true) }
-        endTimeButton.setOnClickListener { showTimePicker(false) }
+        btnLocation = findViewById(R.id.btnSelectLocation)
+        tvLocationStatus = findViewById(R.id.tvLocationStatus)
 
-        saveButton.setOnClickListener {
-            val title = titleEditText.text.toString().trim()
-            val date = dateEditText.text.toString().trim()
-            val description = descriptionEditText.text.toString().trim()
+        btnStart = findViewById(R.id.btnStartTime)
+        btnEnd = findViewById(R.id.btnEndTime)
+        tvTimeStatus = findViewById(R.id.tvTimeStatus)
 
-            if (title.isNotEmpty() && date.isNotEmpty() && description.isNotEmpty() && eventLatitude != 0.0 && startTime > 0 && endTime > 0) {
-                if (endTime <= startTime) {
-                    Toast.makeText(this, "End time must be after start time.", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-                saveEvent(title, date, description, eventLatitude, eventLongitude, startTime, endTime)
-            } else {
-                Toast.makeText(this, "Please fill all fields, select a location, and set a time window.", Toast.LENGTH_LONG).show()
-            }
+        btnSave = findViewById(R.id.btnSaveEvent)
+
+        // Listeners
+        etDate.isFocusable = false
+        etDate.setOnClickListener { pickDate() }
+
+        btnLocation.setOnClickListener {
+            val fields = listOf(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG)
+            val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields).build(this)
+            startAutocomplete.launch(intent)
         }
+
+        btnStart.setOnClickListener { pickTime(isStart = true) }
+        btnEnd.setOnClickListener { pickTime(isStart = false) }
+
+        btnSave.setOnClickListener { saveEvent() }
     }
 
-    private fun showTimePicker(isStartTime: Boolean) {
-        val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(Calendar.MINUTE)
+    private fun pickDate() {
+        val c = Calendar.getInstance()
+        DatePickerDialog(this, { _, year, month, day ->
+            selectedDateStr = "$day/${month + 1}/$year"
+            etDate.setText(selectedDateStr)
+            c.set(year, month, day)
+            finalTimestamp = c.timeInMillis
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
+    }
 
-        TimePickerDialog(this, { _, selectedHour, selectedMinute ->
-            val selectedTime = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, selectedHour)
-                set(Calendar.MINUTE, selectedMinute)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-
-            if (isStartTime) {
-                startTime = selectedTime
+    private fun pickTime(isStart: Boolean) {
+        val c = Calendar.getInstance()
+        TimePickerDialog(this, { _, hour, minute ->
+            val timeStr = String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
+            if (isStart) {
+                startTimeStr = timeStr
+                btnStart.text = "Start: $timeStr"
             } else {
-                endTime = selectedTime
+                endTimeStr = timeStr
+                btnEnd.text = "End: $timeStr"
             }
-            updateTimeWindowText()
-        }, hour, minute, false).show()
+            tvTimeStatus.text = "Window: $startTimeStr - $endTimeStr"
+        }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show()
     }
 
-    private fun updateTimeWindowText() {
-        val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        val startText = if (startTime > 0) timeFormat.format(Date(startTime)) else "..."
-        val endText = if (endTime > 0) timeFormat.format(Date(endTime)) else "..."
-        timeWindowTextView.text = "Window: $startText - $endText"
-    }
+    private fun saveEvent() {
+        val title = etTitle.text.toString().trim()
+        val desc = etDesc.text.toString().trim()
+        val hoursString = etAllottedHours.text.toString().trim()
+        val allottedHours = hoursString.toIntOrNull() ?: 0
 
-    private fun launchPlacePicker() {
-        val fields = listOf(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG)
-        val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields).build(this)
-        startAutocomplete.launch(intent)
-    }
+        // Validation
+        if (title.isEmpty() || selectedDateStr.isEmpty() || selectedLocationName.isEmpty() || allottedHours <= 0) {
+            Toast.makeText(this, "Please fill Title, Date, Location, and Allotted Hours", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-    private fun saveEvent(title: String, date: String, description: String, lat: Double, lon: Double, start: Long, end: Long) {
-        val eventsCollection = firestore.collection("events")
-        val eventDoc = eventsCollection.document()
-
-        val newEvent = Event(
-            id = eventDoc.id,
-            title = title,
-            date = date,
-            description = description,
-            latitude = lat,
-            longitude = lon,
-            status = "active",
-            attendanceStartTime = start,
-            attendanceEndTime = end
+        val eventMap = hashMapOf(
+            "title" to title,
+            "description" to desc,
+            "date" to selectedDateStr,
+            "startTime" to startTimeStr,
+            "endTime" to endTimeStr,
+            "location" to selectedLocationName,
+            "latitude" to selectedLat,
+            "longitude" to selectedLng,
+            "timestamp" to finalTimestamp,
+            "allottedHours" to allottedHours,
+            "status" to "STOPPED",
+            "isArchived" to false
         )
 
-        eventDoc.set(newEvent)
+        db.collection("events").add(eventMap)
             .addOnSuccessListener {
-                Toast.makeText(this, "Event added successfully!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Event Created with $allottedHours Credit Hours!", Toast.LENGTH_SHORT).show()
                 finish()
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to add event.", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 }

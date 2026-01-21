@@ -9,60 +9,53 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class ManageEventsActivity : AppCompatActivity() {
 
-    private val firestore = FirebaseFirestore.getInstance()
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ManageEventAdapter
+    private val db = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // ERROR FIX: Ensure this XML file exists and has the RecyclerView ID
         setContentView(R.layout.activity_manage_events)
 
-        recyclerView = findViewById(R.id.manageEventsRecyclerView)
+        // ERROR FIX: Make sure the ID in XML is actually 'recyclerManageEvents'
+        recyclerView = findViewById(R.id.recyclerManageEvents)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // The adapter is now simpler, only needing handlers for complete and delete
-        adapter = ManageEventAdapter(
-            emptyList(),
-            onCompleteClick = { event -> markEventAsCompleted(event) },
-            onDeleteClick = { event -> deleteEvent(event) }
-        )
+        // ERROR FIX: We MUST pass the { logic } block here now!
+        adapter = ManageEventAdapter(emptyList()) { event, newStatus ->
+            updateEventStatus(event, newStatus)
+        }
+
         recyclerView.adapter = adapter
 
         loadActiveEvents()
     }
 
     private fun loadActiveEvents() {
-        firestore.collection("events")
-            .whereEqualTo("status", "active")
-            .addSnapshotListener { snapshot, _ ->
-                val events = snapshot?.toObjects(Event::class.java) ?: emptyList()
-                adapter.updateEvents(events)
+        db.collection("events")
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) return@addSnapshotListener
+
+                val eventList = mutableListOf<Event>()
+                if (snapshots != null) {
+                    for (doc in snapshots) {
+                        val event = doc.toObject(Event::class.java).copy(id = doc.id)
+                        eventList.add(event)
+                    }
+                    adapter.updateEvents(eventList)
+                }
             }
     }
 
-    private fun markEventAsCompleted(event: Event) {
-        if (event.id.isEmpty()) {
-            Toast.makeText(this, "Cannot complete event with missing ID.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        firestore.collection("events").document(event.id)
-            .update("status", "completed")
-            .addOnSuccessListener {
-                Toast.makeText(this, "'${event.title}' marked as completed.", Toast.LENGTH_SHORT).show()
-            }
-    }
+    private fun updateEventStatus(event: Event, newStatus: String) {
+        if (event.id.isEmpty()) return
 
-    private fun deleteEvent(event: Event) {
-        if (event.id.isEmpty()) {
-            Toast.makeText(this, "Cannot delete event with missing ID.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        firestore.collection("events").document(event.id).delete()
+        db.collection("events").document(event.id)
+            .update("status", newStatus)
             .addOnSuccessListener {
-                Toast.makeText(this, "'${event.title}' deleted", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error deleting event", Toast.LENGTH_SHORT).show()
+                val msg = if (newStatus == "ACTIVE") "Attendance Started" else "Attendance Stopped"
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
             }
     }
 }
