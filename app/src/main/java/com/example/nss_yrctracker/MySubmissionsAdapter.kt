@@ -1,46 +1,49 @@
 package com.example.nss_yrctracker
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 
-class MySubmissionsAdapter(private var submissions: List<Submission>) :
-    RecyclerView.Adapter<MySubmissionsAdapter.ViewHolder>() {
+class MySubmissionsAdapter(private val submissions: List<Submission>) :
+    RecyclerView.Adapter<MySubmissionsAdapter.SubmissionViewHolder>() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    class SubmissionViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvEvent: TextView = view.findViewById(R.id.tvSubEventTitle)
+        val tvStatus: TextView = view.findViewById(R.id.tvSubStatus)
+        val tvSummary: TextView = view.findViewById(R.id.tvSubSummary)
+        val imgProof: ImageView = view.findViewById(R.id.imgSubProof)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SubmissionViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_my_submission, parent, false)
-        return ViewHolder(view)
+        return SubmissionViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(submissions[position])
-    }
+    override fun onBindViewHolder(holder: SubmissionViewHolder, position: Int) {
+        val submission = submissions[position]
 
-    override fun getItemCount(): Int = submissions.size
+        // These match the master Submission.kt properties
+        holder.tvEvent.text = submission.eventTitle
+        holder.tvSummary.text = submission.summary
+        holder.tvStatus.text = submission.status
 
-    fun updateSubmissions(newSubmissions: List<Submission>) {
-        this.submissions = newSubmissions
-        notifyDataSetChanged()
-    }
-
-    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val eventTitle: TextView = itemView.findViewById(R.id.eventTitleTextView)
-        private val status: TextView = itemView.findViewById(R.id.statusTextView)
-        private val comments: TextView = itemView.findViewById(R.id.commentsTextView)
-
-        fun bind(submission: Submission) {
-            eventTitle.text = submission.eventTitle
-            status.text = "Status: ${submission.status}"
-
-            if (submission.status == "Rejected" && submission.comments.isNotEmpty()) {
-                comments.visibility = View.VISIBLE
-                comments.text = "Admin Comments: ${submission.comments}"
-            } else {
-                comments.visibility = View.GONE
-            }
+        when (submission.status) {
+            "APPROVED" -> holder.tvStatus.setTextColor(Color.parseColor("#4CAF50"))
+            "REJECTED" -> holder.tvStatus.setTextColor(Color.parseColor("#F44336"))
+            else -> holder.tvStatus.setTextColor(Color.parseColor("#FF9800"))
         }
+
+        Glide.with(holder.itemView.context)
+            .load(submission.imageUrl)
+            .placeholder(android.R.drawable.ic_menu_gallery)
+            .into(holder.imgProof)
     }
+
+    override fun getItemCount() = submissions.size
 }

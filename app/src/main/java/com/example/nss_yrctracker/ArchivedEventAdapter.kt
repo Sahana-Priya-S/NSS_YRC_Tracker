@@ -4,25 +4,13 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.text.SimpleDateFormat
+import java.util.*
 
-class ArchivedEventAdapter(
-    private var events: List<Event>
-) : RecyclerView.Adapter<ArchivedEventAdapter.ViewHolder>() {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_archived_event, parent, false)
-        return ViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(events[position])
-    }
-
-    override fun getItemCount(): Int = events.size
+class ArchivedEventAdapter(private var events: List<Event>) :
+    RecyclerView.Adapter<ArchivedEventAdapter.ViewHolder>() {
 
     fun updateEvents(newEvents: List<Event>) {
         this.events = newEvents
@@ -30,23 +18,32 @@ class ArchivedEventAdapter(
     }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val title: TextView = itemView.findViewById(R.id.eventTitleTextView)
-        private val date: TextView = itemView.findViewById(R.id.eventDateTextView)
-        private val status: TextView = itemView.findViewById(R.id.statusTextView)
-        private val viewSubmissionsButton: Button = itemView.findViewById(R.id.viewSubmissionsButton)
+        // FIXED: Using archiveTitle and archiveDate from your XML
+        val title: TextView = itemView.findViewById(R.id.archiveTitle)
+        val date: TextView = itemView.findViewById(R.id.archiveDate)
+    }
 
-        fun bind(event: Event) {
-            title.text = event.title
-            date.text = event.date
-            status.text = "Status: ${event.status.replaceFirstChar { it.uppercase() }}"
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_archive_glass, parent, false)
+        return ViewHolder(view)
+    }
 
-            // **FIX IS HERE**: Add the click listener
-            viewSubmissionsButton.setOnClickListener {
-                val intent = Intent(itemView.context, EventParticipantsActivity::class.java).apply {
-                    putExtra("EVENT_TITLE", event.title)
-                }
-                itemView.context.startActivity(intent)
-            }
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val event = events[position]
+        holder.title.text = event.title
+
+        val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+        holder.date.text = if (event.timestamp > 0) sdf.format(Date(event.timestamp)) else event.date
+
+        holder.itemView.setOnClickListener {
+            val context = holder.itemView.context
+            val intent = Intent(context, AttendanceReportActivity::class.java)
+            intent.putExtra("eventId", event.id)
+            intent.putExtra("eventTitle", event.title)
+            context.startActivity(intent)
         }
     }
+
+    override fun getItemCount() = events.size
 }

@@ -3,123 +3,159 @@ package com.example.nss_yrctracker
 import android.app.TimePickerDialog
 import android.os.Bundle
 import android.widget.Button
-import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.firestore.FirebaseFirestore
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 class EditTimeActivity : AppCompatActivity() {
 
-    private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var eventId: String
-    private var startTime: Long = 0
-    private var endTime: Long = 0
+    // UI Components
+    private lateinit var tvStartTime: TextView
+    private lateinit var tvEndTime: TextView
+    private lateinit var btnSave: Button
 
-    private lateinit var currentTimeWindowTextView: TextView
+    // Quick Extend Buttons
+    private lateinit var btn15: Button
+    private lateinit var btn30: Button
+    private lateinit var btn60: Button
+
+    // Data & Logic
+    private val db = FirebaseFirestore.getInstance()
+    private var eventId: String = ""
+    private var startTime: String = ""
+    private var endTime: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_time)
 
-        eventId = intent.getStringExtra("EVENT_ID") ?: ""
-        if (eventId.isEmpty()) {
-            finish()
-            return
-        }
+        // 1. Get Event ID
+        eventId = intent.getStringExtra("eventId") ?: ""
 
-        currentTimeWindowTextView = findViewById(R.id.currentTimeWindowTextView)
-        val editStartTimeButton = findViewById<Button>(R.id.editStartTimeButton)
-        val editEndTimeButton = findViewById<Button>(R.id.editEndTimeButton)
-        val extendTimeEditText = findViewById<EditText>(R.id.extendTimeEditText)
-        val extendTimeButton = findViewById<Button>(R.id.extendTimeButton)
-        val saveTimeButton = findViewById<Button>(R.id.saveTimeButton)
+        // 2. Initialize Views
+        tvStartTime = findViewById(R.id.tvStartTime)
+        tvEndTime = findViewById(R.id.tvEndTime)
+        btnSave = findViewById(R.id.btnSaveTime)
 
-        // Load the current times
+        btn15 = findViewById(R.id.btnExtend15)
+        btn30 = findViewById(R.id.btnExtend30)
+        btn60 = findViewById(R.id.btnExtend60)
+
+        // 3. Load existing times from Firebase
         loadEventTimes()
 
-        editStartTimeButton.setOnClickListener { showTimePicker(true) }
-        editEndTimeButton.setOnClickListener { showTimePicker(false) }
+        // 4. Setup Time Pickers (Clicking the text opens the clock)
+        tvStartTime.setOnClickListener { showTimePicker(isStart = true) }
+        tvEndTime.setOnClickListener { showTimePicker(isStart = false) }
 
-        extendTimeButton.setOnClickListener {
-            val minutes = extendTimeEditText.text.toString().toIntOrNull()
-            if (minutes != null) {
-                extendEndTime(minutes)
-            } else {
-                Toast.makeText(this, "Please enter a valid number of minutes.", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // 5. Setup Quick Extend Buttons
+        btn15.setOnClickListener { extendEndTime(15) }
+        btn30.setOnClickListener { extendEndTime(30) }
+        btn60.setOnClickListener { extendEndTime(60) }
 
-        saveTimeButton.setOnClickListener {
-            saveTimeChanges()
-        }
+        // 6. Setup Save Button
+        btnSave.setOnClickListener { saveTimes() }
     }
 
     private fun loadEventTimes() {
-        firestore.collection("events").document(eventId).get().addOnSuccessListener { doc ->
-            val event = doc.toObject(Event::class.java)
-            if (event != null) {
-                startTime = event.attendanceStartTime
-                endTime = event.attendanceEndTime
-                updateTimeWindowText()
+        if (eventId.isEmpty()) return
+
+        db.collection("events").document(eventId).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val event = document.toObject(Event::class.java)
+                    if (event != null) {
+                        startTime = event.startTime
+                        endTime = event.endTime
+
+                        // Update UI if data exists
+                        if (startTime.isNotEmpty()) tvStartTime.text = startTime
+                        if (endTime.isNotEmpty()) tvEndTime.text = endTime
+                    }
+                }
             }
-        }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error loading event", Toast.LENGTH_SHORT).show()
+            }
     }
 
-    private fun showTimePicker(isStartTime: Boolean) {
+    private fun showTimePicker(isStart: Boolean) {
         val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(Calendar.MINUTE)
+        val picker = TimePickerDialog(this,
+            { _, hour, minute ->
+                val timeStr = String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
 
-        TimePickerDialog(this, { _, selectedHour, selectedMinute ->
-            val selectedTime = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, selectedHour)
-                set(Calendar.MINUTE, selectedMinute)
-            }.timeInMillis
-
-            if (isStartTime) {
-                startTime = selectedTime
-            } else {
-                endTime = selectedTime
-            }
-            updateTimeWindowText()
-        }, hour, minute, false).show()
+                if (isStart) {
+                    startTime = timeStr
+                    tvStartTime.text = timeStr
+                } else {
+                    endTime = timeStr
+                    tvEndTime.text = timeStr
+                }
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            true // 24-hour format
+        )
+        picker.show()
     }
 
-    private fun extendEndTime(minutes: Int) {
-        endTime += minutes * 60 * 1000 // Convert minutes to milliseconds
-        updateTimeWindowText()
-        Toast.makeText(this, "End time extended by $minutes minutes.", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun updateTimeWindowText() {
-        val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        val startText = if (startTime > 0) timeFormat.format(Date(startTime)) else "Not Set"
-        val endText = if (endTime > 0) timeFormat.format(Date(endTime)) else "Not Set"
-        currentTimeWindowTextView.text = "Current Window: $startText - $endText"
-    }
-
-    private fun saveTimeChanges() {
-        if (endTime <= startTime) {
-            Toast.makeText(this, "End time must be after start time.", Toast.LENGTH_SHORT).show()
+    // --- NEW FEATURE: Quick Extend Logic ---
+    private fun extendEndTime(minutesToAdd: Int) {
+        if (endTime.isEmpty()) {
+            Toast.makeText(this, "Set an End Time first", Toast.LENGTH_SHORT).show()
             return
         }
 
-        firestore.collection("events").document(eventId)
-            .update(mapOf(
-                "attendanceStartTime" to startTime,
-                "attendanceEndTime" to endTime
-            ))
+        try {
+            // 1. Parse current End Time (e.g., "14:30")
+            val parts = endTime.split(":")
+            val calendar = Calendar.getInstance()
+            calendar.set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+            calendar.set(Calendar.MINUTE, parts[1].toInt())
+
+            // 2. Add minutes
+            calendar.add(Calendar.MINUTE, minutesToAdd)
+
+            // 3. Format back to String (e.g., "14:45")
+            val newHour = calendar.get(Calendar.HOUR_OF_DAY)
+            val newMinute = calendar.get(Calendar.MINUTE)
+            val newTimeStr = String.format(Locale.getDefault(), "%02d:%02d", newHour, newMinute)
+
+            // 4. Update UI and Variable
+            endTime = newTimeStr
+            tvEndTime.text = newTimeStr
+
+            Toast.makeText(this, "Extended by $minutesToAdd mins", Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error calculating time", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun saveTimes() {
+        if (eventId.isEmpty()) return
+
+        btnSave.isEnabled = false
+        btnSave.text = "Saving..."
+
+        val updates = mapOf(
+            "startTime" to startTime,
+            "endTime" to endTime
+        )
+
+        db.collection("events").document(eventId).update(updates)
             .addOnSuccessListener {
-                Toast.makeText(this, "Time window updated successfully!", Toast.LENGTH_SHORT).show()
-                finish()
+                Toast.makeText(this, "Time Updated Successfully!", Toast.LENGTH_SHORT).show()
+                finish() // Close screen
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Failed to update time window.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Update Failed", Toast.LENGTH_SHORT).show()
+                btnSave.isEnabled = true
+                btnSave.text = "Update Time"
             }
     }
 }

@@ -1,86 +1,123 @@
 package com.example.nss_yrctracker
 
+import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.net.Uri
 import android.os.Bundle
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Spinner
+import android.os.Environment
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
+import java.io.File
+import java.io.FileOutputStream
 
 class AttendanceReportActivity : AppCompatActivity() {
 
-    private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var eventSpinner: Spinner
+    // These names are now synced with your XML IDs
     private lateinit var recyclerView: RecyclerView
-    private lateinit var reportAdapter: AttendanceReportAdapter
-    private var allEvents = mutableListOf<Event>()
+    private lateinit var btnExport: Button
+    private val db = FirebaseFirestore.getInstance()
+    private val attendanceList = mutableListOf<AttendanceRecord>()
+    private var eventId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_attendance_report)
 
-        eventSpinner = findViewById(R.id.eventSpinnerReport)
-        recyclerView = findViewById(R.id.attendanceRecyclerView)
+        // SYNCED: Matches your XML android:id="@+id/recyclerReport"
+        recyclerView = findViewById(R.id.recyclerReport)
+
+        // SYNCED: Matches your XML android:id="@+id/btnExportPdf"
+        btnExport = findViewById(R.id.btnExportPdf)
+
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        reportAdapter = AttendanceReportAdapter(emptyList())
-        recyclerView.adapter = reportAdapter
+        eventId = intent.getStringExtra("EVENT_ID") ?: ""
 
-        loadAllEventsIntoSpinner()
+        loadAttendanceData()
+
+        btnExport.setOnClickListener {
+            generateAndSharePDF()
+        }
     }
 
-    private fun loadAllEventsIntoSpinner() {
-        firestore.collection("events").get()
-            .addOnSuccessListener { snapshot ->
-                allEvents = snapshot.toObjects(Event::class.java).toMutableList()
-                // Sort events perhaps by date or title if needed
-                val eventTitles = allEvents.map { it.title }
-                val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, eventTitles)
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                eventSpinner.adapter = adapter
-
-                eventSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                        val selectedEvent = allEvents[position]
-                        loadAttendanceForEvent(selectedEvent.id)
-                    }
-                    override fun onNothingSelected(parent: AdapterView<*>?) {}
-                }
-            }
-    }
-
-    private fun loadAttendanceForEvent(eventId: String) {
-        if (eventId.isEmpty()) return
-
-        firestore.collection("attendance")
+    private fun loadAttendanceData() {
+        // Uses the enabled index for the attendance collection
+        db.collection("attendance")
             .whereEqualTo("eventId", eventId)
             .get()
-            .addOnSuccessListener { attendanceSnapshot ->
-                val userIds = attendanceSnapshot.documents.mapNotNull { it.getString("userId") }
-
-                if (userIds.isNotEmpty()) {
-                    // Fetch user emails based on the user IDs
-                    firestore.collection("users").whereIn(FieldPath.documentId(), userIds).get()
-                        .addOnSuccessListener { userSnapshot ->
-                            val emails = userSnapshot.documents.mapNotNull { it.getString("email") }
-                            reportAdapter.updateStudents(emails)
-                        }
-                        .addOnFailureListener {
-                            Toast.makeText(this, "Failed to load student details.", Toast.LENGTH_SHORT).show()
-                            reportAdapter.updateStudents(emptyList()) // Clear list on error
-                        }
-                } else {
-                    reportAdapter.updateStudents(listOf("No attendance records found."))
+            .addOnSuccessListener { snapshots ->
+                attendanceList.clear()
+                for (doc in snapshots) {
+                    val record = doc.toObject(AttendanceRecord::class.java)
+                    attendanceList.add(record)
                 }
+                recyclerView.adapter = AttendanceReportAdapter(attendanceList)
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to load attendance records.", Toast.LENGTH_SHORT).show()
-                reportAdapter.updateStudents(emptyList()) // Clear list on error
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to load: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    private fun generateAndSharePDF() {
+        if (attendanceList.isEmpty()) {
+            Toast.makeText(this, "No records to export", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val pdfDocument = PdfDocument()
+        val paint = Paint()
+        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+        val page = pdfDocument.startPage(pageInfo)
+        val canvas: Canvas = page.canvas
+
+        paint.textSize = 20f
+        canvas.drawText("Attendance Report", 20f, 50f, paint)
+
+        paint.textSize = 14f
+        var y = 100f
+        for (record in attendanceList) {
+            // This line will no longer be red if the data class has 'studentName'
+            canvas.drawText("${record.studentName} - ${record.status}", 20f, y, paint)
+            y += 25f
+        }
+
+        pdfDocument.finishPage(page)
+
+        // Saves to the device's Documents folder
+        val filePath = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Report_${System.currentTimeMillis()}.pdf")
+
+        try {
+            pdfDocument.writeTo(FileOutputStream(filePath))
+            pdfDocument.close()
+
+            // Opens the Android Share Sheet (Save as / Share)
+            sharePDF(filePath)
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "PDF Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun sharePDF(pdfFile: File) {
+        val uri: Uri = FileProvider.getUriForFile(
+            this,
+            "${packageName}.provider",
+            pdfFile
+        )
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Security requirement
+        }
+
+        startActivity(Intent.createChooser(intent, "Share or Save PDF"))
     }
 }

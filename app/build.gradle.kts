@@ -54,6 +54,8 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -72,10 +74,13 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.github.bumptech.glide:glide:4.12.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("androidx.fragment:fragment-ktx:1.5.3")
 
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.android.libraries.places:places:3.4.0")
+    implementation("com.google.android.libraries.places:places:3.3.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
 
 // RecyclerView + CardView
     implementation ("androidx.recyclerview:recyclerview:1.3.0")

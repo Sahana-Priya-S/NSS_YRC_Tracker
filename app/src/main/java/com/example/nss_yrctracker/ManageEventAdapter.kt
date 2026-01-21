@@ -1,76 +1,58 @@
 package com.example.nss_yrctracker
 
-import android.content.Intent
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 
 class ManageEventAdapter(
-    private var eventList: List<Event>,
-    private val onCompleteClick: (Event) -> Unit,
-    private val onDeleteClick: (Event) -> Unit
-) : RecyclerView.Adapter<ManageEventAdapter.ViewHolder>() {
+    private var events: List<Event>,
+    private val onStatusChange: (Event, String) -> Unit // The required parameter
+) : RecyclerView.Adapter<ManageEventAdapter.ManageViewHolder>() {
 
-    fun updateEvents(newEvents: List<Event>) {
-        this.eventList = newEvents
-        notifyDataSetChanged()
+    class ManageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        // Ensure these IDs match your 'item_manage_event.xml'
+        val tvTitle: TextView = view.findViewById(R.id.eventTitle)
+        val btnToggle: Button = view.findViewById(R.id.btnToggleAttendance)
+
+        fun bind(event: Event, onStatusChange: (Event, String) -> Unit) {
+            tvTitle.text = event.title
+
+            // Visual Logic
+            if (event.status == "ACTIVE") {
+                btnToggle.text = "Stop"
+                btnToggle.setBackgroundColor(Color.RED)
+            } else {
+                btnToggle.text = "Start"
+                btnToggle.setBackgroundColor(Color.parseColor("#065F46"))
+            }
+
+            // Click Logic
+            btnToggle.setOnClickListener {
+                val newStatus = if (event.status == "ACTIVE") "STOPPED" else "ACTIVE"
+                onStatusChange(event, newStatus)
+            }
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ManageViewHolder {
+        // FIX: Using the correct filename 'item_manage_event'
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_manage_event, parent, false)
-        return ViewHolder(view)
+        return ManageViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val event = eventList[position]
-        holder.bind(event)
+    override fun onBindViewHolder(holder: ManageViewHolder, position: Int) {
+        holder.bind(events[position], onStatusChange)
     }
 
-    override fun getItemCount(): Int = eventList.size
+    override fun getItemCount() = events.size
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val titleTextView: TextView = itemView.findViewById(R.id.eventTitleTextView)
-        private val editEventButton: Button = itemView.findViewById(R.id.editEventButton)
-        private val viewRegistrationsButton: Button = itemView.findViewById(R.id.viewRegistrationsButton)
-        private val deleteEventButton: Button = itemView.findViewById(R.id.deleteEventButton)
-        private val completeEventButton: Button = itemView.findViewById(R.id.completeEventButton)
-
-        fun bind(event: Event) {
-            titleTextView.text = event.title
-
-            // Navigation is handled here
-            editEventButton.setOnClickListener {
-                if (event.id.isNullOrEmpty() || event.title.isNullOrEmpty()) {
-                    Toast.makeText(itemView.context, "Cannot view participants: Event data incomplete.", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-                val intent = Intent(itemView.context, EventParticipantsActivity::class.java).apply {
-                    putExtra("EVENT_ID", event.id)
-                    putExtra("EVENT_TITLE", event.title)
-                }
-                itemView.context.startActivity(intent)
-            }
-
-            viewRegistrationsButton.setOnClickListener {
-                if (event.id.isNullOrEmpty() || event.title.isNullOrEmpty()) {
-                    Toast.makeText(itemView.context, "Cannot view participants: Event data incomplete.", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-                val intent = Intent(itemView.context, EventParticipantsActivity::class.java).apply {
-                    putExtra("EVENT_ID", event.id)
-                    putExtra("EVENT_TITLE", event.title)
-                }
-                itemView.context.startActivity(intent)
-            }
-
-            // Actions are passed up to the Activity
-            completeEventButton.setOnClickListener { onCompleteClick(event) }
-            deleteEventButton.setOnClickListener { onDeleteClick(event) }
-        }
+    fun updateEvents(newEvents: List<Event>) {
+        events = newEvents
+        notifyDataSetChanged()
     }
 }

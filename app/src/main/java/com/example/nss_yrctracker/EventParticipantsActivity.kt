@@ -6,104 +6,55 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 
 class EventParticipantsActivity : AppCompatActivity() {
 
-    private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var eventNameTitle: TextView
-    private lateinit var attendedRecyclerView: RecyclerView
-    private lateinit var registeredRecyclerView: RecyclerView
-    private lateinit var attendedAdapter: AttendanceReportAdapter
-    private lateinit var registeredAdapter: AttendanceReportAdapter
-
-    // Add TextViews for titles
+    private lateinit var attendedAdapter: EventParticipantsAdapter
+    private lateinit var registeredAdapter: EventParticipantsAdapter
     private lateinit var attendedTitleTextView: TextView
     private lateinit var registeredTitleTextView: TextView
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_event_participants)
 
-        eventNameTitle = findViewById(R.id.eventNameTitle)
-        attendedRecyclerView = findViewById(R.id.attendedStudentsRecyclerView)
-        registeredRecyclerView = findViewById(R.id.registeredStudentsRecyclerView)
-        // Find the title TextViews by ID
-        attendedTitleTextView = findViewById(R.id.attendedTitleTextView)
+        // Initialize Views and Adapters
         registeredTitleTextView = findViewById(R.id.registeredTitleTextView)
+        attendedTitleTextView = findViewById(R.id.attendedTitleTextView)
 
+        val regRecyclerView = findViewById<RecyclerView>(R.id.registeredRecyclerView)
+        val attRecyclerView = findViewById<RecyclerView>(R.id.attendedRecyclerView)
 
-        attendedRecyclerView.layoutManager = LinearLayoutManager(this)
-        registeredRecyclerView.layoutManager = LinearLayoutManager(this)
+        registeredAdapter = EventParticipantsAdapter(emptyList())
+        attendedAdapter = EventParticipantsAdapter(emptyList())
 
-        attendedAdapter = AttendanceReportAdapter(emptyList())
-        registeredAdapter = AttendanceReportAdapter(emptyList())
+        regRecyclerView.layoutManager = LinearLayoutManager(this)
+        attRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        attendedRecyclerView.adapter = attendedAdapter
-        registeredRecyclerView.adapter = registeredAdapter
+        regRecyclerView.adapter = registeredAdapter
+        attRecyclerView.adapter = attendedAdapter
 
-        val eventId = intent.getStringExtra("EVENT_ID")
-        val eventTitle = intent.getStringExtra("EVENT_TITLE")
-
-        if (eventId == null || eventTitle == null) {
-            Toast.makeText(this, "Error: Event details missing.", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
-        eventNameTitle.text = "Participants for $eventTitle"
-        loadAttendedStudents(eventId)
-        loadRegisteredStudents(eventTitle)
+        val eventId = intent.getStringExtra("EVENT_ID") ?: return
+        loadRegisteredAndAttended(eventId)
     }
 
-    private fun loadAttendedStudents(eventId: String) {
-        firestore.collection("attendance")
-            .whereEqualTo("eventId", eventId)
-            .get()
-            .addOnSuccessListener { attendanceSnapshot ->
-                val userIds = attendanceSnapshot.documents.mapNotNull { it.getString("userId") }
-                // Update title with count
-                attendedTitleTextView.text = "Attended Students: (${userIds.size})"
-                fetchAndDisplayEmails(userIds, attendedAdapter, "No attendance records found.")
+    private fun loadRegisteredAndAttended(eventId: String) {
+        // Load Registrations
+        firestore.collection("registrations").whereEqualTo("eventId", eventId).get()
+            .addOnSuccessListener { snapshot ->
+                val emails = snapshot.documents.map { it.getString("studentEmail") ?: "Unknown" }
+                registeredTitleTextView.text = "Registered Students: (${emails.size})"
+                registeredAdapter.updateStudents(emails)
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to load attendance.", Toast.LENGTH_SHORT).show()
-                attendedTitleTextView.text = "Attended Students: (Error)"
-                attendedAdapter.updateStudents(emptyList())
-            }
-    }
 
-    private fun loadRegisteredStudents(eventTitle: String) {
-        firestore.collection("registrations")
-            .whereEqualTo("eventTitle", eventTitle)
-            .get()
-            .addOnSuccessListener { registrationSnapshot ->
-                val userIds = registrationSnapshot.documents.mapNotNull { it.getString("userId") }
-                // Update title with count
-                registeredTitleTextView.text = "Registered Students: (${userIds.size})"
-                fetchAndDisplayEmails(userIds, registeredAdapter, "No registrations found.")
+        // Load Attendance
+        firestore.collection("events").document(eventId).collection("attendance").get()
+            .addOnSuccessListener { snapshot ->
+                val ids = snapshot.documents.map { it.id }
+                attendedTitleTextView.text = "Attended Students: (${ids.size})"
+                attendedAdapter.updateStudents(ids)
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to load registrations.", Toast.LENGTH_SHORT).show()
-                registeredTitleTextView.text = "Registered Students: (Error)"
-                registeredAdapter.updateStudents(emptyList())
-            }
-    }
-
-    private fun fetchAndDisplayEmails(userIds: List<String>, adapter: AttendanceReportAdapter, emptyMessage: String) {
-        if (userIds.isNotEmpty()) {
-            firestore.collection("users").whereIn(FieldPath.documentId(), userIds).get()
-                .addOnSuccessListener { userSnapshot ->
-                    val emails = userSnapshot.documents.mapNotNull { it.getString("email") }
-                    adapter.updateStudents(emails)
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Failed to load student emails.", Toast.LENGTH_SHORT).show()
-                    adapter.updateStudents(emptyList())
-                }
-        } else {
-            adapter.updateStudents(listOf(emptyMessage))
-        }
     }
 }

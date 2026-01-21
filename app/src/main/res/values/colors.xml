@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#5F8A8A</color>
-    <color name="primary_dark">#1A3A3A</color>
-    <color name="secondary">#87A9A9</color>
-    <color name="accent_light">#AEEEEE</color>
-    <color name="background_light">#F5F5F5</color>
-    <color name="card_background">#FFFFFF</color>
-    <color name="text_primary">#212121</color>
-    <color name="text_secondary">#757575</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="primary_emerald">#065F46</color>
+    <color name="accent_mint">#10B981</color>
+    <color name="soft_green_bg">#D1FAE5</color>
+    <color name="glass_white">#BCFFFFFF</color>
+    <color name="glass_border">#4DFFFFFF</color>
+    <color name="text_dark">#064E3B</color>
+    <color name="text_muted">#374151</color>
 
-    <color name="status_green">#4CAF50</color>     <color name="status_red">#D32F2F</color>       </resources>
+    <color name="primary">@color/primary_emerald</color>
+    <color name="primary_dark">#064E3B</color>
+    <color name="secondary">@color/accent_mint</color>
+    <color name="background_light">@color/soft_green_bg</color>
+    <color name="card_background">@color/glass_white</color>
+    <color name="text_primary">@color/text_dark</color>
+    <color name="text_secondary">@color/text_muted</color>
+    <color name="text_subtle">@color/text_muted</color>
+
+    <color name="status_green">#10B981</color> <color name="status_red">#EF4444</color>   <color name="yrc_red_solid">#EF4444</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

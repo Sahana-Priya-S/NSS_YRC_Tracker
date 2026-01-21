@@ -17,10 +17,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.NSS_YRCTracker">
 
-        <receiver android:name=".GeofenceBroadcastReceiver" android:exported="true" />
+        <activity
+            android:name=".SignUpActivity"
+            android:exported="false" />
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCx4oQApTqJRcdl3hYOrV3nYtYu3kj4-gQ" />
+
+        <receiver
+            android:name=".GeofenceBroadcastReceiver"
+            android:exported="true" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,23 +38,35 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".LoginActivity" />
-        <activity android:name=".HomeActivity" />
-        <activity android:name=".AdminHomeActivity" />
-        <activity android:name=".StudentHomeActivity" />
-        <activity android:name=".AddEventActivity" />
-        <activity android:name=".ManageEventsActivity" />
-        <activity android:name=".EditEventActivity" />
-        <activity android:name=".EventParticipantsActivity" />
-        <activity android:name=".SubmitProofActivity" />
-        <activity android:name=".ApprovalsActivity" />
-        <activity android:name=".MySubmissionsActivity" />
-        <activity android:name=".AchievementsActivity" />
-        <activity android:name=".ArchivesActivity" />
-        <activity android:name=".EventDetailActivity" />
-        <activity android:name=".EditTimeActivity" />
-        <activity android:name=".AttendanceReportActivity" />
-        <activity android:name=".StudentProfileActivity" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
 
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".AdminHomeActivity" android:exported="false" />
+        <activity android:name=".StudentHomeActivity" android:exported="false" />
+        <activity android:name=".AddEventActivity" android:exported="false" />
+        <activity android:name=".ManageEventsActivity" android:exported="false" />
+        <activity android:name=".EditEventActivity" android:exported="false" />
+        <activity android:name=".EventParticipantsActivity" android:exported="false" />
+        <activity android:name=".SubmitProofActivity" android:exported="false" />
+        <activity android:name=".ApprovalsActivity" android:exported="false" />
+        <activity android:name=".MySubmissionsActivity" android:exported="false" />
+        <activity android:name=".AchievementsActivity" android:exported="false" />
+        <activity android:name=".ArchivesActivity" android:exported="false" />
+        <activity android:name=".EventDetailsActivity" android:exported="false" />
+        <activity android:name=".EditTimeActivity" android:exported="false" />
+        <activity android:name=".AttendanceReportActivity" android:exported="false" />
+        <activity android:name=".StudentProfileActivity" android:exported="false" />
+        <activity android:name=".EventSummaryActivity" android:exported="false" />
+        <activity android:name=".StudentSubmissionActivity" android:exported="false" />
+        <activity android:name=".DigitalIDActivity" android:exported="false" />
     </application>
+
 </manifest>

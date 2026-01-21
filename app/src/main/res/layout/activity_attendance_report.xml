@@ -1,49 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pdfContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_light">
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/primary"
-        android:padding="16dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Attendance Report"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="@color/white"
-            android:layout_gravity="start|center_vertical"/>
-    </FrameLayout>
-
-    <Spinner
-        android:id="@+id/eventSpinnerReport"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:background="@drawable/background_edittext"
-        android:padding="12dp"/>
+    android:background="#FFFFFF"
+    android:padding="24dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Attended Students:"
-        android:textSize="18sp"
+        android:text="Attendance Report"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginStart="16dp"
+        android:textColor="#065F46"
         android:layout_marginBottom="8dp"/>
 
+    <TextView
+        android:id="@+id/tvReportEventName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Event: Blood Donation Camp"
+        android:textSize="16sp"
+        android:textColor="#000000"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/tvReportDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Date: May 20, 2025"
+        android:textSize="14sp"
+        android:textColor="#757575"
+        android:layout_marginBottom="24dp"/>
+
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/attendanceRecyclerView"
+        android:id="@+id/recyclerReport"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingBottom="16dp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnExportPdf"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Save as PDF"
+        android:backgroundTint="#065F46"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"/>
 
 </LinearLayout>

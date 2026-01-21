@@ -3,13 +3,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_light">
+    android:background="@color/soft_green_bg"
+    android:padding="16dp">
 
-    <FrameLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/primary"
-        android:padding="16dp">
+        android:padding="20dp"
+        android:background="@drawable/glass_panel"
+        android:layout_marginBottom="24dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -17,16 +19,31 @@
             android:text="My Achievements"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:textColor="@color/white"
-            android:layout_gravity="start|center_vertical"/>
-    </FrameLayout>
+            android:textColor="@color/text_dark"/>
+    </RelativeLayout>
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Achievements feature is coming soon!"
-        android:layout_gravity="center"
-        android:layout_marginTop="50dp"
-        android:textSize="18sp"/>
+        android:orientation="vertical"
+        android:padding="40dp"
+        android:gravity="center"
+        android:background="@drawable/glass_panel">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Feature Coming Soon!"
+            android:textColor="@color/text_dark"
+            android:textStyle="bold"
+            android:textSize="18sp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Track your badges and NSS milestones here."
+            android:textColor="@color/text_subtle"
+            android:gravity="center"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
 </LinearLayout>

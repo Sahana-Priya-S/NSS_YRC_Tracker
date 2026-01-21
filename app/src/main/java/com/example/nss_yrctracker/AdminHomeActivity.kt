@@ -2,131 +2,108 @@ package com.example.nss_yrctracker
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import android.util.Log
+import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
 class AdminHomeActivity : AppCompatActivity() {
 
-    private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var adminEventAdapter: AdminEventAdapter
+    // UI Components
+    private lateinit var tvName: TextView
+    private lateinit var tvEmail: TextView
+
+    // Firebase Instances
+    private val db = FirebaseFirestore.getInstance()
+    private val userId = FirebaseAuth.getInstance().currentUser?.uid
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_admin_home)
 
-        setupButtons()
-        setupRecyclerView()
-        loadEvents()
-    }
+        // 1. Initialize Header Views
+        tvName = findViewById(R.id.tvAdminName)
+        tvEmail = findViewById(R.id.tvAdminEmail)
 
-    private fun setupButtons() {
-        val logoutButton = findViewById<Button>(R.id.logoutButton)
-        val fabAddEvent = findViewById<FloatingActionButton>(R.id.fab_add_event)
-        val bottomNavAdmin = findViewById<BottomNavigationView>(R.id.bottom_navigation_admin)
+        // 2. Load Admin Profile Data
+        loadAdminProfile()
 
-        logoutButton.setOnClickListener {
-            auth.signOut()
-            startActivity(Intent(this, MainActivity::class.java))
+        // 3. Setup Logout Button Logic (FIXED)
+        // We use 'logoutButton' because the ImageButton sits on top and catches the click
+        val btnLogout = findViewById<View>(R.id.logoutButton)
+
+        btnLogout.setOnClickListener {
+            // Sign out from Firebase
+            FirebaseAuth.getInstance().signOut()
+
+            // Navigate back to Login Screen & Clear Back Stack
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
             finish()
-        }
-        fabAddEvent.setOnClickListener {
-            startActivity(Intent(this, AddEventActivity::class.java))
+
+            Toast.makeText(this, "Logged Out Successfully", Toast.LENGTH_SHORT).show()
         }
 
-        bottomNavAdmin.setOnItemSelectedListener { item ->
+        // 4. Setup Bottom Navigation (FIXED)
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setOnItemSelectedListener { item ->
+            var selectedFragment: Fragment? = null
+
+            // Handle Navigation Item Clicks
             when (item.itemId) {
-                R.id.nav_admin_events -> { /* Current screen */ }
-                R.id.nav_manage -> startActivity(Intent(this, ManageEventsActivity::class.java))
-                R.id.nav_approvals -> startActivity(Intent(this, ApprovalsActivity::class.java))
-                R.id.nav_archives -> startActivity(Intent(this, ArchivesActivity::class.java))
-                else -> return@setOnItemSelectedListener false
+                R.id.nav_admin_events -> selectedFragment = AdminEventsFragment()
+                R.id.nav_admin_manage -> selectedFragment = ManageFragment()
+                R.id.nav_admin_approvals -> selectedFragment = ApprovalsFragment()
+                R.id.nav_admin_archives -> selectedFragment = ArchivesFragment() // LOAD THE FRAGMENT HERE
             }
-            item.itemId == R.id.nav_admin_events
+
+            // Switch the Fragment if one was selected
+            if (selectedFragment != null) {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, selectedFragment)
+                    .commit()
+                return@setOnItemSelectedListener true
+            }
+            false
         }
-        bottomNavAdmin.selectedItemId = R.id.nav_admin_events
-    }
 
-    private fun setupRecyclerView() {
-        val recyclerView = findViewById<RecyclerView>(R.id.adminEventsRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-
-        // **THIS IS THE FIX**: Initialize the adapter with the correct click handlers
-        adminEventAdapter = AdminEventAdapter(
-            emptyList(),
-            onStartClick = { event -> updateAttendanceStatus(event, true) },
-            onStopClick = { event -> updateAttendanceStatus(event, false) }
-        )
-        recyclerView.adapter = adminEventAdapter
-    }
-
-    private fun updateAttendanceStatus(event: Event, isActive: Boolean) {
-        if (event.id.isEmpty()) {
-            Toast.makeText(this, "Cannot update event without an ID.", Toast.LENGTH_SHORT).show()
-            return
+        // 5. Load Default Fragment (Events) on Startup
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, AdminEventsFragment())
+                .commit()
         }
-        firestore.collection("events").document(event.id)
-            .update("attendanceActive", isActive)
-            .addOnSuccessListener {
-                val status = if (isActive) "started" else "stopped"
-                Toast.makeText(this, "Attendance ${status} for '${event.title}'", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to update attendance status.", Toast.LENGTH_SHORT).show()
-            }
     }
 
-    private fun loadEvents() {
-        firestore.collection("events")
-            .whereEqualTo("status", "active")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Toast.makeText(this, "Error loading events.", Toast.LENGTH_SHORT).show()
-                    return@addSnapshotListener
+    // --- HELPER FUNCTION: Load Admin Details ---
+    private fun loadAdminProfile() {
+        if (userId == null) return
+
+        db.collection("users").document(userId)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val name = document.getString("name") ?: "Admin"
+                    val email = document.getString("email") ?: "No Email"
+                    val role = document.getString("role") ?: "Admin"
+
+                    tvName.text = "Hello, $name"
+                    tvEmail.text = "$email ($role)"
+                } else {
+                    tvName.text = "Hello, Admin"
+                    tvEmail.text = "Profile not found"
                 }
-                val events = snapshot?.toObjects(Event::class.java) ?: emptyList()
-                adminEventAdapter.updateEvents(events)
-                checkForPastEventsAndArchive(events)
             }
-    }
-
-    private fun checkForPastEventsAndArchive(events: List<Event>) {
-        // **FIX IS HERE**: Get the start of today (midnight)
-        val startOfToday = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.time
-
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
-        for (event in events) {
-            if (event.id.isEmpty() || event.date.isEmpty()) continue
-
-            try {
-                // Parse the event date (defaults to midnight of that day)
-                val eventDate = dateFormat.parse(event.date)
-
-                // Only archive if the event date is strictly before the start of today
-                if (eventDate != null && eventDate.before(startOfToday)) {
-                    firestore.collection("events").document(event.id)
-                        .update("status", "archived")
-                    // Optional: Add listeners for success/failure if needed
-                }
-            } catch (e: Exception) {
-                // Ignore events with incorrectly formatted dates
+            .addOnFailureListener { e ->
+                tvName.text = "Welcome"
+                tvEmail.text = "Error loading profile"
+                Log.e("AdminHome", "Error loading profile", e)
             }
-        }
     }
 }
