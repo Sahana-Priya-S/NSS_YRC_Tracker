@@ -19,7 +19,6 @@ import java.io.FileOutputStream
 
 class AttendanceReportActivity : AppCompatActivity() {
 
-    // These names are now synced with your XML IDs
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnExport: Button
     private val db = FirebaseFirestore.getInstance()
@@ -30,17 +29,18 @@ class AttendanceReportActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_attendance_report)
 
-        // SYNCED: Matches your XML android:id="@+id/recyclerReport"
+        // SYNCED IDs: Verified against activity_attendance_report.xml
         recyclerView = findViewById(R.id.recyclerReport)
-
-        // SYNCED: Matches your XML android:id="@+id/btnExportPdf"
         btnExport = findViewById(R.id.btnExportPdf)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
-
         eventId = intent.getStringExtra("EVENT_ID") ?: ""
 
-        loadAttendanceData()
+        if (eventId.isNotEmpty()) {
+            loadAttendanceData()
+        } else {
+            Toast.makeText(this, "Error: Event ID not found", Toast.LENGTH_SHORT).show()
+        }
 
         btnExport.setOnClickListener {
             generateAndSharePDF()
@@ -48,20 +48,24 @@ class AttendanceReportActivity : AppCompatActivity() {
     }
 
     private fun loadAttendanceData() {
-        // Uses the enabled index for the attendance collection
+        // IMPORTANT: Verify if the collection is "attendance" or "Attendance" in Firebase Console
         db.collection("attendance")
             .whereEqualTo("eventId", eventId)
             .get()
             .addOnSuccessListener { snapshots ->
                 attendanceList.clear()
-                for (doc in snapshots) {
-                    val record = doc.toObject(AttendanceRecord::class.java)
-                    attendanceList.add(record)
+                if (snapshots.isEmpty) {
+                    Toast.makeText(this, "No attendance records found for this event", Toast.LENGTH_SHORT).show()
+                } else {
+                    for (doc in snapshots) {
+                        val record = doc.toObject(AttendanceRecord::class.java)
+                        attendanceList.add(record)
+                    }
                 }
                 recyclerView.adapter = AttendanceReportAdapter(attendanceList)
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to load: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Firestore Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -83,23 +87,19 @@ class AttendanceReportActivity : AppCompatActivity() {
         paint.textSize = 14f
         var y = 100f
         for (record in attendanceList) {
-            // This line will no longer be red if the data class has 'studentName'
+            // Uses the variable we mapped with @PropertyName
             canvas.drawText("${record.studentName} - ${record.status}", 20f, y, paint)
             y += 25f
         }
 
         pdfDocument.finishPage(page)
 
-        // Saves to the device's Documents folder
-        val filePath = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Report_${System.currentTimeMillis()}.pdf")
+        val filePath = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "AttendanceReport_${System.currentTimeMillis()}.pdf")
 
         try {
             pdfDocument.writeTo(FileOutputStream(filePath))
             pdfDocument.close()
-
-            // Opens the Android Share Sheet (Save as / Share)
             sharePDF(filePath)
-
         } catch (e: Exception) {
             Toast.makeText(this, "PDF Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -115,9 +115,8 @@ class AttendanceReportActivity : AppCompatActivity() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
             putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Security requirement
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-
-        startActivity(Intent.createChooser(intent, "Share or Save PDF"))
+        startActivity(Intent.createChooser(intent, "Share Attendance Report"))
     }
 }

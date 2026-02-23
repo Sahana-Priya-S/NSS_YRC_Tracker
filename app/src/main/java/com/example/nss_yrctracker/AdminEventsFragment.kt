@@ -31,7 +31,6 @@ class AdminEventsFragment : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerAdminEvents)
         recyclerView.layoutManager = LinearLayoutManager(context)
 
-        // Initialize Adapter with the 5 specific action handlers
         adapter = AdminEventAdapter(
             events = eventsList,
             onStartClick = { event -> updateEventStatus(event, "ACTIVE") },
@@ -42,9 +41,9 @@ class AdminEventsFragment : Fragment() {
                 startActivity(intent)
             },
             onCardClick = { event ->
-                // Ensure IDs match for report generation
+                // FIXED: Use "EVENT_ID" (All Caps) to match AttendanceReportActivity
                 val intent = Intent(context, AttendanceReportActivity::class.java)
-                intent.putExtra("eventId", event.id)
+                intent.putExtra("EVENT_ID", event.id)
                 intent.putExtra("eventTitle", event.title)
                 intent.putExtra("eventDate", event.date)
                 startActivity(intent)
@@ -66,7 +65,6 @@ class AdminEventsFragment : Fragment() {
     }
 
     private fun loadEvents() {
-        // Query only active/stopped events (not archived)
         db.collection("events")
             .whereEqualTo("isArchived", false)
             .orderBy("timestamp", Query.Direction.DESCENDING)
@@ -80,7 +78,6 @@ class AdminEventsFragment : Fragment() {
                     eventsList.clear()
                     for (doc in snapshots) {
                         try {
-                            // Map to Event.kt model ensuring ID is captured
                             val event = doc.toObject(Event::class.java).copy(id = doc.id)
                             eventsList.add(event)
                         } catch (err: Exception) {
@@ -106,14 +103,13 @@ class AdminEventsFragment : Fragment() {
     private fun showArchiveConfirmation(event: Event) {
         AlertDialog.Builder(requireContext())
             .setTitle("End Event Permanently?")
-            .setMessage("This will archive '${event.title}' and award ${event.allottedHours} hours to all present volunteers. This cannot be undone.")
+            .setMessage("This will archive '${event.title}' and award ${event.allottedHours} hours to all present volunteers.")
             .setPositiveButton("Archive") { _, _ -> archiveEventPermanently(event) }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
     private fun archiveEventPermanently(event: Event) {
-        // Mark as archived so it leaves this fragment list
         db.collection("events").document(event.id)
             .update(
                 "status", "ARCHIVED",
@@ -129,7 +125,7 @@ class AdminEventsFragment : Fragment() {
         val hoursToAward = event.allottedHours
         if (hoursToAward <= 0) return
 
-        // Award only to students present in this specific event
+        // FIXED: Ensure the field name here matches your Firestore (usually lowercase 'eventId')
         db.collection("attendance")
             .whereEqualTo("eventId", event.id)
             .whereEqualTo("status", "PRESENT")
@@ -139,7 +135,6 @@ class AdminEventsFragment : Fragment() {
                     val studentId = doc.getString("studentId") ?: continue
                     val userRef = db.collection("users").document(studentId)
 
-                    // Transaction ensures data accuracy
                     db.runTransaction { transaction ->
                         val snapshot = transaction.get(userRef)
                         val currentHours = snapshot.getLong("totalHours") ?: 0

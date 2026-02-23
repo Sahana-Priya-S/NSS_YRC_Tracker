@@ -17,7 +17,7 @@ class AdminEventAdapter(
     private val onStopClick: (Event) -> Unit,
     private val onEditTimeClick: (Event) -> Unit,
     private val onCardClick: (Event) -> Unit,
-    private val onArchiveClick: (Event) -> Unit // New Parameter for Permanent End
+    private val onArchiveClick: (Event) -> Unit
 ) : RecyclerView.Adapter<AdminEventAdapter.AdminEventViewHolder>() {
 
     class AdminEventViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -27,7 +27,6 @@ class AdminEventAdapter(
         val btnStart: MaterialButton = view.findViewById(R.id.startAttendanceButton)
         val btnStop: MaterialButton = view.findViewById(R.id.stopAttendanceButton)
         val btnEditTime: ImageButton = view.findViewById(R.id.btnEditTime)
-        // Ensure this ID btnArchiveEvent exists in your item_admin_event.xml
         val btnArchive: MaterialButton = view.findViewById(R.id.btnArchiveEvent)
     }
 
@@ -43,11 +42,9 @@ class AdminEventAdapter(
         holder.tvTitle.text = event.title
         holder.tvDesc.text = event.description
 
-        // Formatting the date
         val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-        holder.tvDate.text = if (event.timestamp > 0) sdf.format(Date(event.timestamp)) else "No Date"
+        holder.tvDate.text = if (event.timestamp > 0) sdf.format(Date(event.timestamp)) else event.date
 
-        // Handle UI states for Start/Stop buttons
         if (event.status == "ACTIVE") {
             holder.btnStart.isEnabled = false
             holder.btnStart.text = "Active"
@@ -60,17 +57,12 @@ class AdminEventAdapter(
             holder.btnStop.alpha = 0.5f
         }
 
-        // Set Click Listeners for standard actions
         holder.btnStart.setOnClickListener { onStartClick(event) }
         holder.btnStop.setOnClickListener { onStopClick(event) }
         holder.btnEditTime.setOnClickListener { onEditTimeClick(event) }
+        holder.btnArchive.setOnClickListener { onArchiveClick(event) }
 
-        // Listener for permanent archiving (End Permanently)
-        holder.btnArchive.setOnClickListener {
-            onArchiveClick(event)
-        }
-
-        // Clicking the whole card opens the Attendance Report
+        // Triggered when the card is clicked
         holder.itemView.setOnClickListener {
             onCardClick(event)
         }

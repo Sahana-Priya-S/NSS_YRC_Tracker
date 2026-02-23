@@ -39,7 +39,7 @@ class ArchivedEventAdapter(private var events: List<Event>) :
         holder.itemView.setOnClickListener {
             val context = holder.itemView.context
             val intent = Intent(context, AttendanceReportActivity::class.java)
-            intent.putExtra("eventId", event.id)
+            intent.putExtra("EVENT_ID", event.id)
             intent.putExtra("eventTitle", event.title)
             context.startActivity(intent)
         }
