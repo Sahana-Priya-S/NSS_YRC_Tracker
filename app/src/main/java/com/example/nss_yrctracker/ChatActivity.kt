@@ -22,16 +22,17 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
+        // Matches the Intent key used in your UserAdapter
         receiverId = intent.getStringExtra("RECEIVER_ID")
         val currentUserId = auth.currentUser?.uid ?: return
 
-        // Safety check: If no receiver, we can't chat
         if (receiverId == null) {
-            Toast.makeText(this, "Error: No recipient selected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No recipient selected", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
+        // Matches layout IDs in activity_chat.xml
         val rvMessages = findViewById<RecyclerView>(R.id.rvChatMessages)
         val etMessage = findViewById<EditText>(R.id.etChatMessage)
         val btnSend = findViewById<Button>(R.id.btnChatSend)
@@ -40,20 +41,17 @@ class ChatActivity : AppCompatActivity() {
         rvMessages.layoutManager = LinearLayoutManager(this)
         rvMessages.adapter = chatAdapter
 
-        // REAL-TIME LISTENER
+        // Step 6: Corrected real-time listener logic
         db.collection("chats")
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    return@addSnapshotListener
-                }
+                if (e != null) return@addSnapshotListener
 
                 if (snapshot != null) {
                     messages.clear()
                     for (doc in snapshot.documents) {
                         val msg = doc.toObject(ChatMessage::class.java)
-                        // This logic works for both Admin and Student
+                        // Filter for the specific two-way conversation
                         if (msg != null && (
                                     (msg.senderId == currentUserId && msg.receiverId == receiverId) ||
                                             (msg.senderId == receiverId && msg.receiverId == currentUserId)
@@ -62,19 +60,21 @@ class ChatActivity : AppCompatActivity() {
                         }
                     }
                     chatAdapter.notifyDataSetChanged()
-                    rvMessages.scrollToPosition(messages.size - 1)
+                    if (messages.isNotEmpty()) {
+                        rvMessages.scrollToPosition(messages.size - 1)
+                    }
                 }
             }
 
+        // Step 5: Corrected sendMessage logic
         btnSend.setOnClickListener {
             val text = etMessage.text.toString().trim()
-            if (text.isNotEmpty()) {
-                // Ensure receiverId is NOT null before sending
-                receiverId?.let { id ->
-                    val msg = ChatMessage(currentUserId, id, text, System.currentTimeMillis())
-                    db.collection("chats").add(msg)
-                    etMessage.text.clear()
-                }
+            if (text.isNotEmpty() && receiverId != null) {
+                val msg = ChatMessage(currentUserId, receiverId!!, text, System.currentTimeMillis())
+                db.collection("chats").add(msg)
+                    .addOnSuccessListener {
+                        etMessage.text.clear()
+                    }
             }
         }
     }
