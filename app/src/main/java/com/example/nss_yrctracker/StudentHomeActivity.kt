@@ -14,9 +14,10 @@ class StudentHomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_student_home)
 
-        // 1. Setup Logout Logic
-        // This button must be in activity_student_home.xml, NOT inside the fragment
         val btnLogout = findViewById<ImageButton>(R.id.btnStudentLogout)
+        // ADD THIS: Find your chat button
+        val btnChat = findViewById<ImageButton>(R.id.btnStudentChat)
+
         btnLogout.setOnClickListener {
             FirebaseAuth.getInstance().signOut()
             val intent = Intent(this, LoginActivity::class.java)
@@ -26,7 +27,12 @@ class StudentHomeActivity : AppCompatActivity() {
             finish()
         }
 
-        // 2. Load the Student Dashboard Fragment (The list of events)
+        // NEW: Navigation to UserListActivity for Students
+        btnChat.setOnClickListener {
+            val intent = Intent(this, UserListActivity::class.java)
+            startActivity(intent)
+        }
+
         if (savedInstanceState == null) {
             loadFragment(StudentHomeFragment())
         }

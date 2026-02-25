@@ -3,6 +3,7 @@ package com.example.nss_yrctracker
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -24,6 +25,13 @@ class ChatActivity : AppCompatActivity() {
         receiverId = intent.getStringExtra("RECEIVER_ID")
         val currentUserId = auth.currentUser?.uid ?: return
 
+        // Safety check: If no receiver, we can't chat
+        if (receiverId == null) {
+            Toast.makeText(this, "Error: No recipient selected", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         val rvMessages = findViewById<RecyclerView>(R.id.rvChatMessages)
         val etMessage = findViewById<EditText>(R.id.etChatMessage)
         val btnSend = findViewById<Button>(R.id.btnChatSend)
@@ -32,17 +40,20 @@ class ChatActivity : AppCompatActivity() {
         rvMessages.layoutManager = LinearLayoutManager(this)
         rvMessages.adapter = chatAdapter
 
-        // REAL-TIME LISTENER: This keeps the chat updated instantly
+        // REAL-TIME LISTENER
         db.collection("chats")
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, e ->
-                if (e != null) return@addSnapshotListener
+                if (e != null) {
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
 
                 if (snapshot != null) {
                     messages.clear()
                     for (doc in snapshot.documents) {
                         val msg = doc.toObject(ChatMessage::class.java)
-                        // Show only messages between these two specific users
+                        // This logic works for both Admin and Student
                         if (msg != null && (
                                     (msg.senderId == currentUserId && msg.receiverId == receiverId) ||
                                             (msg.senderId == receiverId && msg.receiverId == currentUserId)
@@ -58,9 +69,12 @@ class ChatActivity : AppCompatActivity() {
         btnSend.setOnClickListener {
             val text = etMessage.text.toString().trim()
             if (text.isNotEmpty()) {
-                val msg = ChatMessage(currentUserId, receiverId!!, text, System.currentTimeMillis())
-                db.collection("chats").add(msg) // Stored permanently in Firestore
-                etMessage.text.clear()
+                // Ensure receiverId is NOT null before sending
+                receiverId?.let { id ->
+                    val msg = ChatMessage(currentUserId, id, text, System.currentTimeMillis())
+                    db.collection("chats").add(msg)
+                    etMessage.text.clear()
+                }
             }
         }
     }

@@ -21,16 +21,13 @@ class LoginActivity : AppCompatActivity() {
 
         auth = FirebaseAuth.getInstance()
 
-        // FIXED: Using IDs from activity_login.xml
         val etEmail = findViewById<EditText>(R.id.etLoginEmail)
         val etPassword = findViewById<EditText>(R.id.etLoginPassword)
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val tvGoToSignUp = findViewById<TextView>(R.id.tvGoToSignUp)
 
-        // Inside LoginActivity.kt
         tvGoToSignUp.setOnClickListener {
-            // Ensure the file is named RegisterActivity.kt or SignUpActivity.kt
-            val intent = Intent(this, RegisterActivity::class.java)
+            val intent = Intent(this, SignUpActivity::class.java)
             startActivity(intent)
         }
 
@@ -57,12 +54,12 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun checkUserRole(uid: String) {
-        // Mark user as Online
-        db.collection("users").document(uid).update("status", "online")
-
         db.collection("users").document(uid).get()
             .addOnSuccessListener { document ->
                 if (document.exists()) {
+                    // Update status to online only if document exists
+                    db.collection("users").document(uid).update("status", "online")
+
                     val role = document.getString("role") ?: "STUDENT"
                     if (role == "ADMIN") {
                         startActivity(Intent(this, AdminHomeActivity::class.java))
@@ -70,7 +67,13 @@ class LoginActivity : AppCompatActivity() {
                         startActivity(Intent(this, StudentHomeActivity::class.java))
                     }
                     finish()
+                } else {
+                    // This is where you were likely stuck!
+                    Toast.makeText(this, "User profile not found in database.", Toast.LENGTH_LONG).show()
                 }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error fetching user: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 }

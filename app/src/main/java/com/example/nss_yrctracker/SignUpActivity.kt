@@ -13,7 +13,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 class SignUpActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
-    private val db = FirebaseFirestore.getInstance()
+    private val db = FirebaseFirestore.getInstance() // Added Firestore instance
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,58 +21,55 @@ class SignUpActivity : AppCompatActivity() {
 
         auth = FirebaseAuth.getInstance()
 
-        // Syncing with XML IDs
         val etName = findViewById<EditText>(R.id.etRegisterName)
         val etEmail = findViewById<EditText>(R.id.etRegisterEmail)
         val etPass = findViewById<EditText>(R.id.etRegisterPassword)
         val btnRegister = findViewById<Button>(R.id.btnRegister)
         val tvLogin = findViewById<TextView>(R.id.tvBackToLogin)
 
-        tvLogin.setOnClickListener {
-            finish()
-        }
-
         btnRegister.setOnClickListener {
-            val name = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
             val password = etPass.text.toString().trim()
+            val name = etName.text.toString().trim()
 
-            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            if (email.isNotEmpty() && password.isNotEmpty() && name.isNotEmpty()) {
+                auth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(this) { task ->
+                        if (task.isSuccessful) {
+                            val userId = auth.currentUser?.uid
 
-            // Create user in Firebase Auth
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener { result ->
-                    val userId = result.user?.uid
+                            // SAVE USER DATA TO FIRESTORE
+                            val userMap = hashMapOf(
+                                "name" to name,
+                                "email" to email,
+                                "role" to "STUDENT", // Default role
+                                "status" to "online"
+                            )
 
-                    // Create data map with All-Caps Role
-                    val userMap = hashMapOf(
-                        "name" to name,
-                        "email" to email,
-                        "role" to "STUDENT",
-                        "totalHours" to 0,
-                        "eventsAttended" to 0
-                    )
-
-                    if (userId != null) {
-                        // Save to "users" collection
-                        db.collection("users").document(userId).set(userMap)
-                            .addOnSuccessListener {
-                                Toast.makeText(this, "Account Created!", Toast.LENGTH_SHORT).show()
-                                // Navigate to Login instead of just finishing
-                                startActivity(Intent(this, LoginActivity::class.java))
-                                finish()
+                            if (userId != null) {
+                                db.collection("users").document(userId)
+                                    .set(userMap)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(this, "Registration Successful", Toast.LENGTH_SHORT).show()
+                                        val intent = Intent(this, RegisterActivity::class.java)
+                                        startActivity(intent)
+                                        finish()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(this, "Database Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
                             }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "Database Error: ${e.message}", Toast.LENGTH_LONG).show()
-                            }
+                        } else {
+                            Toast.makeText(this, "Registration Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this, "Auth Error: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+            } else {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        tvLogin.setOnClickListener {
+            finish()
         }
     }
 }
