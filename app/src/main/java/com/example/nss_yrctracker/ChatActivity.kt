@@ -1,6 +1,7 @@
 package com.example.nss_yrctracker
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -22,17 +23,15 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
-        // Matches the Intent key used in your UserAdapter
         receiverId = intent.getStringExtra("RECEIVER_ID")
-        val currentUserId = auth.currentUser?.uid ?: return
+        val currentUserId = auth.currentUser?.uid
 
-        if (receiverId == null) {
-            Toast.makeText(this, "No recipient selected", Toast.LENGTH_SHORT).show()
+        if (currentUserId == null || receiverId == null) {
+            Toast.makeText(this, "Session error: User not found", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        // Matches layout IDs in activity_chat.xml
         val rvMessages = findViewById<RecyclerView>(R.id.rvChatMessages)
         val etMessage = findViewById<EditText>(R.id.etChatMessage)
         val btnSend = findViewById<Button>(R.id.btnChatSend)
@@ -41,17 +40,19 @@ class ChatActivity : AppCompatActivity() {
         rvMessages.layoutManager = LinearLayoutManager(this)
         rvMessages.adapter = chatAdapter
 
-        // Step 6: Corrected real-time listener logic
+        // Persistent Two-Way Listener
         db.collection("chats")
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, e ->
-                if (e != null) return@addSnapshotListener
+                if (e != null) {
+                    Log.e("ChatActivity", "Listen failed", e)
+                    return@addSnapshotListener
+                }
 
                 if (snapshot != null) {
                     messages.clear()
                     for (doc in snapshot.documents) {
                         val msg = doc.toObject(ChatMessage::class.java)
-                        // Filter for the specific two-way conversation
                         if (msg != null && (
                                     (msg.senderId == currentUserId && msg.receiverId == receiverId) ||
                                             (msg.senderId == receiverId && msg.receiverId == currentUserId)
@@ -66,14 +67,18 @@ class ChatActivity : AppCompatActivity() {
                 }
             }
 
-        // Step 5: Corrected sendMessage logic
         btnSend.setOnClickListener {
             val text = etMessage.text.toString().trim()
             if (text.isNotEmpty() && receiverId != null) {
                 val msg = ChatMessage(currentUserId, receiverId!!, text, System.currentTimeMillis())
+
+                // Safety: Database add with error handling
                 db.collection("chats").add(msg)
                     .addOnSuccessListener {
                         etMessage.text.clear()
+                    }
+                    .addOnFailureListener { exception ->
+                        Toast.makeText(this, "Failed to send: ${exception.message}", Toast.LENGTH_SHORT).show()
                     }
             }
         }
